@@ -1,0 +1,15 @@
+[11-Jul-2026 19:41:17 UTC] PHP Warning:  require(/home/fieldcre/app/tenants.php): Failed to open stream: No such file or directory in /home/fieldcre/app/tenant-lookup-by-domain.php on line 31
+[11-Jul-2026 19:41:17 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/fieldcre/app/tenants.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/fieldcre/app/tenant-lookup-by-domain.php:31
+Stack trace:
+#0 {main}
+  thrown in /home/fieldcre/app/tenant-lookup-by-domain.php on line 31
+[12-Jul-2026 09:17:03 UTC] PHP Warning:  require(/home/fieldcre/app/tenants.php): Failed to open stream: No such file or directory in /home/fieldcre/app/tenant-lookup.php on line 29
+[12-Jul-2026 09:17:03 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/fieldcre/app/tenants.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/fieldcre/app/tenant-lookup.php:29
+Stack trace:
+#0 {main}
+  thrown in /home/fieldcre/app/tenant-lookup.php on line 29
+[12-Jul-2026 09:17:15 UTC] PHP Warning:  require(/home/fieldcre/app/tenants.php): Failed to open stream: No such file or directory in /home/fieldcre/app/tenant-lookup-by-domain.php on line 31
+[12-Jul-2026 09:17:15 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/fieldcre/app/tenants.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/fieldcre/app/tenant-lookup-by-domain.php:31
+Stack trace:
+#0 {main}
+  thrown in /home/fieldcre/app/tenant-lookup-by-domain.php on line 31

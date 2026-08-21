@@ -1,0 +1,1195 @@
+:root {
+  /* Surfaces */
+  --page-bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8fa;
+  --surface-subtle-2: #fafbfc;
+
+  /* Text */
+  --text-primary: #1c2430;
+  --text-secondary: #5b6472;
+  --text-secondary-2: #3a4453;
+  --text-muted: #8a919e;
+  --text-muted-2: #a4abb6;
+  --text-muted-3: #9aa1ac;
+
+  /* Borders */
+  --border-1: #e3e6ea;
+  --border-2: #e6e9ed;
+  --border-3: #eef1f4;
+  --border-4: #d8dde3;
+  --border-5: #cfd6df;
+  --border-canvas: #dfe3e8;
+
+  /* Brand — deep navy, per FieldCred marketing/brand strategy */
+  --brand: #0f2148;
+  --brand-hover: #1c3568;
+  --brand-tint-bg: #eaedf5;
+  --brand-tint-border: #c7cfe0;
+
+  /* Status */
+  --valid-text: #158060;
+  --valid-bg: #e4f3ec;
+  --expiring-text: #c98a12;
+  --expiring-text-dark: #9a6708;
+  --expiring-bg: #f8efdc;
+  --expired-text: #b23a2e;
+  --expired-bg: #f9e8e5;
+
+  /* Placeholder stripes */
+  --stripe-a: #eef1f4;
+  --stripe-b: #e2e7ec;
+
+  --radius-card: 11px;
+  --radius-card-lg: 14px;
+  --radius-input: 8px;
+  --radius-pill: 20px;
+
+  --shadow-float: 0 20px 55px -26px rgba(20, 30, 50, 0.4);
+  --shadow-modal: 0 24px 60px -26px rgba(20, 30, 50, 0.5);
+  --shadow-hover: 0 8px 20px -12px rgba(20, 30, 50, 0.3);
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--text-primary);
+  background: var(--page-bg);
+}
+a { color: var(--brand); text-decoration: none; cursor: pointer; }
+a:hover { color: var(--brand-hover); }
+button { font-family: inherit; }
+img { display: block; max-width: 100%; }
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+#app { min-height: 100vh; }
+
+/* ---------- App shell / top nav ---------- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  height: 58px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-1);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.topnav-left { display: flex; align-items: center; gap: 20px; min-width: 0; flex-shrink: 1; }
+.brand-mark { display: flex; align-items: center; gap: 9px; cursor: pointer; flex-shrink: 0; }
+.shield { width: 24px; height: 24px; flex-shrink: 0; }
+.shield.sm { width: 22px; height: 22px; }
+.shield.xs { width: 16px; height: 16px; }
+.wordmark { font-weight: 700; letter-spacing: 0.02em; font-size: 15px; color: var(--text-primary); white-space: nowrap; }
+.topnav-tenant {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted);
+  border-left: 1px solid var(--border-1); padding-left: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 160px; min-width: 32px; flex-shrink: 1;
+}
+.topnav-nav { display: flex; gap: 20px; font-size: 14px; flex-shrink: 0; }
+.topnav-nav a {
+  color: var(--text-secondary);
+  padding-bottom: 19px;
+  margin-bottom: -20px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.topnav-nav a:hover { color: var(--brand); }
+.topnav-nav a.active {
+  color: var(--brand);
+  font-weight: 600;
+  border-bottom-color: var(--brand);
+}
+.topnav-right { display: flex; align-items: center; gap: 12px; min-width: 0; flex-shrink: 1; }
+.topnav-search {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1 1 220px; min-width: 90px; max-width: 240px; height: 36px; padding: 0 12px;
+  border: 1px solid var(--border-1); border-radius: var(--radius-input);
+  background: var(--surface-subtle);
+  font-size: 13px; color: var(--text-muted);
+}
+.topnav-search input { border: none; background: transparent; outline: none; font: inherit; color: var(--text-primary); width: 100%; min-width: 0; }
+.topnav-search input::placeholder { color: var(--text-muted); }
+.topnav-user { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topnav-user-email {
+  font-size: 11.5px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-tint-bg); color: var(--brand);
+  font-size: 13px; font-weight: 600; text-transform: uppercase;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .topnav-search { display: none; }
+}
+@media (max-width: 640px) {
+  .topnav-tenant, .topnav-user-email { display: none; }
+}
+
+.page-content { flex: 1; padding: 26px 32px; background: var(--page-bg); }
+
+.icon { width: 15px; height: 15px; flex-shrink: 0; display: inline-block; vertical-align: middle; }
+.icon-sm { width: 13px; height: 13px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 38px; padding: 0 16px;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-hover); }
+.btn-outline { background: transparent; border-color: var(--brand); color: var(--brand); }
+.btn-outline:hover { background: var(--brand-tint-bg); }
+.btn-neutral-outline { background: transparent; border-color: var(--border-5); color: var(--text-secondary-2); }
+.btn-neutral-outline:hover { background: var(--surface-subtle); }
+.btn-danger-text { background: transparent; color: var(--expired-text); border: none; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.btn-danger-outline { background: transparent; border-color: var(--expired-text); color: var(--expired-text); }
+.btn-danger-outline:hover { background: var(--expired-bg); }
+.btn-tint { background: var(--brand-tint-bg); color: var(--brand); border: none; }
+.btn-tint:hover { background: var(--brand-tint-border); }
+.btn-sm { height: 32px; padding: 0 12px; font-size: 12.5px; border-radius: 7px; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.icon-btn {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border: 1px solid var(--border-1); border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); background: transparent; cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+/* ---------- Pills / status ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pill.status-valid { background: var(--valid-bg); color: var(--valid-text); }
+.pill.status-valid .pill-dot { background: var(--valid-text); }
+.pill.status-expiring { background: var(--expiring-bg); color: var(--expiring-text-dark); }
+.pill.status-expiring .pill-dot { background: var(--expiring-text); }
+.pill.status-expired { background: var(--expired-bg); color: var(--expired-text); }
+.pill.status-expired .pill-dot { background: var(--expired-text); }
+.pill.status-missing { background: var(--border-3); color: var(--text-secondary); }
+.pill.status-missing .pill-dot { background: var(--text-muted); }
+
+/* ---------- Directory ---------- */
+.directory-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 20px; gap: 16px; flex-wrap: wrap;
+}
+.directory-title { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.directory-subline { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+.directory-subline .ok { color: var(--valid-text); font-weight: 600; }
+
+.filter-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-search {
+  flex: 1; min-width: 260px; display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 14px; border: 1px solid var(--border-1); border-radius: 9px;
+  background: var(--surface); font-size: 13px; color: var(--text-muted);
+}
+.filter-search input { border: none; outline: none; background: transparent; font: inherit; color: var(--text-primary); width: 100%; }
+.filter-search input::placeholder { color: var(--text-muted); }
+.filter-chip {
+  display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+  border: 1px solid var(--border-1); border-radius: 9px; background: var(--surface);
+  font-size: 13px; color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+}
+.filter-chip select { border: none; background: transparent; font: inherit; color: inherit; cursor: pointer; outline: none; }
+.filter-chip .chev { color: var(--text-muted-2); }
+.filter-chip.active {
+  border-color: var(--brand); background: var(--brand-tint-bg); color: var(--brand); font-weight: 600;
+}
+
+.worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 980px) { .worker-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .worker-grid { grid-template-columns: 1fr; } }
+
+.worker-card {
+  background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card);
+  padding: 16px; cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.worker-card:hover { border-color: var(--brand); box-shadow: var(--shadow-hover); }
+.worker-card-top { display: flex; gap: 13px; align-items: center; }
+.photo-placeholder {
+  border-radius: 9px; flex-shrink: 0;
+  background: var(--surface-subtle);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted-3); font-family: 'IBM Plex Mono', monospace;
+  overflow: hidden;
+}
+.photo-placeholder .avatar-initials, .public-photo .avatar-initials { width: 100%; height: 100%; display: block; }
+.photo-placeholder img, .badge-placeholder img { width: 100%; height: 100%; object-fit: cover; }
+.worker-card-name { font-size: 15px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.worker-card-title { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.worker-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.02em; }
+.worker-card-divider { height: 1px; background: var(--border-3); margin: 14px 0; }
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.empty-state { padding: 60px 20px; text-align: center; color: var(--text-secondary); font-size: 14px; }
+.empty-state .btn { margin-top: 16px; }
+.empty-state-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+
+/* Loading skeletons — same footprint as the real cards, so content doesn't
+   jump when it arrives. */
+.skeleton { position: relative; overflow: hidden; background: var(--surface-subtle); border-radius: 6px; }
+.skeleton::after {
+  content: ''; position: absolute; inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; } }
+.sk-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card); padding: 16px; }
+.sk-row { display: flex; gap: 13px; align-items: center; }
+.sk-avatar { width: 54px; height: 54px; border-radius: 9px; flex-shrink: 0; }
+.sk-line { height: 10px; }
+.sk-pills { display: flex; gap: 6px; margin-top: 18px; }
+.sk-pill { width: 62px; height: 18px; border-radius: var(--radius-pill); }
+
+/* ---------- Profile (2A sidebar) ---------- */
+.profile-breadcrumb { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); }
+.profile-layout { display: flex; gap: 0; max-width: 1180px; margin: 0 auto; background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border-2); overflow: hidden; }
+@media (max-width: 800px) { .profile-layout { flex-direction: column; } }
+
+.profile-sidebar {
+  width: 300px; flex-shrink: 0; background: var(--surface-subtle);
+  border-right: 1px solid var(--border-2); padding: 24px 22px;
+}
+@media (max-width: 800px) { .profile-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-2); } }
+.profile-photo { width: 100%; height: 210px; border-radius: 10px; }
+.profile-name { font-size: 21px; font-weight: 700; margin-top: 16px; letter-spacing: -0.01em; }
+.profile-title { font-size: 14px; color: var(--brand); font-weight: 600; margin-top: 2px; }
+.profile-dept-chip {
+  display: inline-flex; margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+  background: var(--border-3); padding: 4px 10px; border-radius: 6px;
+}
+.profile-divider { height: 1px; background: var(--border-2); margin: 20px 0; }
+.contact-block { display: flex; flex-direction: column; gap: 14px; }
+.field-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted-2); letter-spacing: 0.1em; }
+.field-value { font-size: 13.5px; color: var(--text-primary); margin-top: 2px; }
+.field-value.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+.field-value.mono.small { font-size: 12px; word-break: break-all; }
+
+.skills-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted-2); letter-spacing: 0.1em; margin-bottom: 9px; }
+.skill-chip { font-size: 11.5px; color: var(--text-secondary-2); background: var(--surface); border: 1px solid var(--border-1); padding: 4px 9px; border-radius: 6px; }
+.skill-chip.on-subtle { background: var(--page-bg); }
+.skill-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.sidebar-actions { display: flex; gap: 8px; margin-top: 22px; }
+.sidebar-actions .btn { flex: 1; height: 40px; }
+
+.profile-main { flex: 1; padding: 24px 26px; min-width: 0; }
+.profile-main-header { display: flex; align-items: baseline; justify-content: space-between; }
+.profile-main-header h2 { font-size: 18px; font-weight: 700; margin: 0; }
+.status-summary { display: flex; gap: 8px; margin: 14px 0 20px; }
+.status-tile { flex: 1; text-align: center; padding: 9px 0; border-radius: 8px; }
+.status-tile .num { font-size: 18px; font-weight: 700; }
+.status-tile .lbl { font-size: 10.5px; font-weight: 600; }
+.status-tile.valid { background: var(--valid-bg); } .status-tile.valid .num, .status-tile.valid .lbl { color: var(--valid-text); }
+.status-tile.expiring { background: var(--expiring-bg); } .status-tile.expiring .num, .status-tile.expiring .lbl { color: var(--expiring-text-dark); }
+.status-tile.expired { background: var(--expired-bg); } .status-tile.expired .num, .status-tile.expired .lbl { color: var(--expired-text); }
+.status-tile.missing { background: var(--border-3); } .status-tile.missing .num, .status-tile.missing .lbl { color: var(--text-secondary); }
+
+.cert-list { display: flex; flex-direction: column; gap: 11px; }
+.cert-row {
+  display: flex; gap: 14px; padding: 15px;
+  border: 1px solid var(--border-2); border-radius: 10px; border-left: 3px solid var(--border-2);
+}
+.badge-placeholder {
+  border-radius: 8px; flex-shrink: 0;
+  background: var(--surface-subtle); border: 1px solid var(--border-3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted-3); font-family: 'IBM Plex Mono', monospace; overflow: hidden;
+}
+.cert-row .badge-placeholder { width: 52px; height: 52px; font-size: 8px; }
+.cert-body { flex: 1; min-width: 0; }
+.cert-body-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cert-name { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.cert-issuer { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.cert-meta-row { display: flex; align-items: center; gap: 18px; margin-top: 9px; flex-wrap: wrap; }
+.cert-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-muted); }
+.cert-meta span { color: var(--text-secondary-2); }
+.cert-actions { margin-left: auto; display: flex; gap: 14px; font-size: 12px; font-weight: 600; }
+.cert-actions .download-link { color: var(--text-secondary); background: none; border: none; padding: 0; font: inherit; font-weight: inherit; cursor: pointer; }
+
+/* ---------- Admin ---------- */
+.admin-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+.range-select {
+  display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+  border: 1px solid var(--border-1); border-radius: 8px; background: var(--surface);
+  font-size: 13px; color: var(--text-secondary);
+}
+.range-select select { border: none; background: transparent; font: inherit; color: inherit; cursor: pointer; outline: none; }
+
+.usage-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: var(--expiring-bg); border: 1px solid var(--expiring-bg);
+  border-left: 3px solid var(--expiring-text); border-radius: var(--radius-card);
+  padding: 14px 18px; margin-bottom: 18px;
+}
+.usage-banner.at-cap { background: var(--expired-bg); border-left-color: var(--expired-text); }
+.usage-banner-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.usage-banner-sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+@media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+.stat-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card); padding: 18px; border-top: 3px solid var(--border-2); }
+.stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; }
+.stat-value { font-size: 30px; font-weight: 700; margin-top: 8px; }
+.stat-note { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.admin-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 16px; }
+@media (max-width: 980px) { .admin-grid { grid-template-columns: 1fr; } }
+.admin-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card); overflow: hidden; }
+.admin-card-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--border-3); }
+.admin-card-header h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.admin-card-header a { font-size: 12px; font-weight: 600; }
+.admin-card-body { padding: 18px; }
+
+.table-head, .table-row {
+  display: grid; grid-template-columns: 1.4fr 1.6fr 1fr 0.9fr; align-items: center;
+}
+.table-head {
+  padding: 10px 18px; background: var(--surface-subtle);
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em;
+}
+.table-row { padding: 13px 18px; border-top: 1px solid var(--border-3); }
+.table-worker { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.table-worker .avatar-sm { width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; overflow: hidden; }
+.avatar-sm img, .avatar-sm .avatar-initials { width: 100%; height: 100%; object-fit: cover; display: block; }
+.table-worker-name { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-cert-name { font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-cert-issuer { font-size: 11px; color: var(--text-muted); }
+.table-expiry { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--text-secondary-2); }
+.table-status { text-align: right; }
+
+.dept-row { display: flex; flex-direction: column; gap: 15px; }
+.dept-item-head { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
+.dept-item-head .name { color: var(--text-secondary-2); }
+.dept-item-head .pct { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+.dept-track { height: 7px; background: var(--border-3); border-radius: 20px; overflow: hidden; }
+.dept-fill { height: 100%; border-radius: 20px; }
+
+/* ---------- Edit / Create form ---------- */
+.form-title { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1.25fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .form-grid { grid-template-columns: 1fr; } }
+.form-card { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card); padding: 22px; }
+.form-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 18px; }
+
+.photo-upload-row { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+.photo-upload-row .photo-placeholder { width: 80px; height: 80px; font-size: 9px; }
+.dropzone {
+  flex: 1; border: 1.5px dashed var(--border-5); border-radius: 9px; padding: 16px; text-align: center;
+  background: var(--surface-subtle-2); cursor: pointer; position: relative;
+}
+.dropzone:hover { border-color: var(--brand); }
+.dropzone .dz-title { font-size: 12.5px; color: var(--brand); font-weight: 600; }
+.dropzone .dz-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dropzone.compact { padding: 0; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--brand); font-weight: 600; background: var(--surface); }
+
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; }
+.field.span-2 { grid-column: span 2; }
+.field .field-label { margin-bottom: 6px; }
+.field input, .field select, .field textarea {
+  height: 40px; padding: 0 12px; border: 1px solid var(--border-4); border-radius: var(--radius-input);
+  background: var(--surface); font-size: 13.5px; color: var(--text-primary); font-family: inherit; outline: none;
+}
+.field input.mono, .field select.mono { font-family: 'IBM Plex Mono', monospace; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand); }
+
+.skills-editor {
+  border: 1px solid var(--border-4); border-radius: var(--radius-input); background: var(--surface);
+  padding: 10px; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center;
+}
+.skill-tag { font-size: 11.5px; color: var(--text-secondary-2); background: var(--border-3); padding: 4px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
+.skill-tag button { border: none; background: none; color: var(--text-muted-2); cursor: pointer; font-size: 12px; line-height: 1; padding: 0; }
+.skills-editor input { border: none; outline: none; font-size: 11.5px; color: var(--text-primary); flex: 1; min-width: 100px; background: transparent; }
+
+.certs-editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.certs-editor-header h3 { margin: 0; }
+.cert-editor { border: 1px solid var(--border-2); border-radius: 10px; padding: 16px; background: var(--surface-subtle-2); margin-bottom: 12px; }
+.cert-editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cert-editor-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; }
+.cert-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cert-editor-grid .field.span-2 { grid-column: span 2; }
+.cert-editor-grid .field-label { font-size: 9.5px; margin-bottom: 5px; }
+.cert-editor-grid input, .cert-editor-grid select { height: 38px; border-radius: 7px; font-size: 13px; }
+.cert-editor-grid input.mono { font-size: 12.5px; }
+.badge-upload-cell { display: flex; align-items: flex-end; }
+
+/* ---------- Share dialog ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(20, 30, 50, 0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+}
+.share-modal {
+  width: 520px; max-width: 100%; border: 1px solid var(--border-canvas); border-radius: var(--radius-card-lg);
+  background: var(--surface); box-shadow: var(--shadow-modal); overflow: hidden;
+}
+.share-modal-header {
+  padding: 18px 22px; border-bottom: 1px solid var(--border-3);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.share-modal-header h2 { font-size: 16px; font-weight: 700; margin: 0; }
+.share-modal-header .sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.share-modal-body { padding: 22px; display: flex; gap: 22px; flex-wrap: wrap; }
+.qr-block { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+.qr-frame { padding: 12px; border: 1px solid var(--border-2); border-radius: 12px; background: var(--surface); }
+.qr-caption { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; }
+.share-actions-col { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
+.link-row { display: flex; gap: 8px; }
+.link-field {
+  flex: 1; min-width: 0; height: 40px; padding: 0 12px; display: flex; align-items: center;
+  border: 1px solid var(--border-4); border-radius: 8px; background: var(--surface-subtle);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--brand);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.share-secondary-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.row-btn {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px;
+  border: 1px solid var(--border-1); border-radius: 8px; font-size: 13px; color: var(--text-secondary-2);
+  background: transparent; cursor: pointer; text-align: left; width: 100%;
+}
+.row-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+.public-toggle-card { margin-top: 16px; padding: 12px 14px; background: var(--page-bg); border-radius: 9px; }
+.public-toggle-top { display: flex; align-items: center; justify-content: space-between; }
+.public-toggle-title { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.toggle { width: 34px; height: 20px; border-radius: 20px; background: var(--border-5); position: relative; cursor: pointer; border: none; padding: 0; flex-shrink: 0; transition: background 150ms ease; }
+.toggle.on { background: var(--brand); }
+.toggle .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 150ms ease; }
+.toggle.on .knob { left: 16px; }
+.public-toggle-help { font-size: 11.5px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
+.link-expires { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted-2); margin-top: 12px; }
+.link-expires .change-link { color: var(--brand); cursor: pointer; }
+.link-expires .le-select { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-secondary-2); border: 1px solid var(--border-4); border-radius: 5px; padding: 1px 4px; background: var(--surface); }
+
+/* Plan cap reached (new-worker form) */
+.cap-reached { max-width: 460px; margin: 48px auto; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-float); padding: 28px; text-align: center; }
+.cap-reached-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.cap-reached-body { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px; }
+.cap-reached-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ---------- Public / mobile record ---------- */
+.public-page { min-height: 100vh; background: var(--page-bg); display: flex; flex-direction: column; }
+.public-header { background: var(--surface); padding: 24px 16px; text-align: center; border-bottom: 1px solid var(--border-3); }
+.public-brand { display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.public-photo { width: 96px; height: 96px; border-radius: 14px; margin: 0 auto; }
+.public-tenant-name { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+.public-tenant-logo { max-height: 40px; max-width: 160px; object-fit: contain; margin: 0 auto 6px; display: block; }
+.public-name { font-size: 20px; font-weight: 700; margin-top: 12px; }
+.public-title { font-size: 13px; color: var(--brand); font-weight: 600; }
+.public-status-row { justify-content: center; margin-top: 10px; }
+.public-freshness { font-size: 10px; color: var(--text-muted-2); margin-top: 8px; letter-spacing: 0.02em; }
+.public-body { flex: 1; max-width: 480px; margin: 0 auto; width: 100%; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.public-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.public-fact-card { background: var(--surface); border: 1px solid var(--border-3); border-radius: 9px; padding: 11px; }
+.public-fact-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted-2); }
+.public-fact-value { font-size: 13px; font-weight: 600; margin-top: 2px; }
+.public-certs-heading { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; margin-top: 6px; }
+.public-cert-card { background: var(--surface); border: 1px solid var(--border-3); border-radius: 10px; padding: 12px; border-left: 3px solid var(--border-3); }
+.public-cert-top { display: flex; align-items: center; gap: 10px; }
+.public-cert-top .badge-placeholder { width: 38px; height: 38px; font-size: 8px; }
+.public-cert-name { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.public-cert-issuer { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.public-cert-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.public-footer { flex-shrink: 0; padding: 14px 16px; background: var(--surface); border-top: 1px solid var(--border-3); position: sticky; bottom: 0; max-width: 480px; margin: 0 auto; width: 100%; }
+.public-unavailable { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; color: var(--text-secondary); }
+
+/* Gate verdicts are intentionally much louder than ordinary status pills.
+   A checker should be able to read the decision at arm's length in daylight. */
+.gate-verdict {
+  width: calc(100% - 28px); max-width: 480px; margin: 14px auto 12px; padding: 17px;
+  display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 13px; align-items: center;
+  border: 1px solid; border-radius: 16px; box-shadow: 0 10px 30px -24px rgba(15, 33, 72, 0.6);
+}
+.gate-verdict-icon {
+  width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700; line-height: 1; background: rgba(255,255,255,.7);
+}
+.gate-verdict-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; margin-bottom: 3px; }
+.gate-verdict-title { font-size: 18px; line-height: 1.16; font-weight: 800; letter-spacing: -.015em; }
+.gate-verdict-detail { margin-top: 5px; font-size: 12.5px; line-height: 1.35; color: var(--text-secondary-2); }
+.gate-verdict-clear { background: #e4f3ec; border-color: #b7dece; color: #0b6b50; }
+.gate-verdict-clear .gate-verdict-icon { color: #fff; background: var(--valid-text); }
+.gate-verdict-block { background: #f9e8e5; border-color: #edc8c1; color: #9f2f25; }
+.gate-verdict-block .gate-verdict-icon { color: #fff; background: var(--expired-text); }
+.gate-verdict-neutral { background: #eef1f4; border-color: #dbe0e6; color: var(--text-primary); }
+.gate-verdict-neutral .gate-verdict-icon { color: var(--text-secondary); background: #fff; }
+.gate-verdict-warn { color: #805b08; font-weight: 600; }
+.gate-context-actions { width: 100%; max-width: 480px; margin: -3px auto 13px; text-align: center; }
+.gate-context-actions button { padding: 6px 10px; border: 0; background: none; color: var(--text-secondary); font-size: 11.5px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* One-time site setup handoff for a gate phone or tablet. */
+.gate-ready-page {
+  min-height: 100vh; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  background: radial-gradient(circle at 50% -10%, #25457b 0, #0f2148 40%, #09152f 100%); color: #fff;
+}
+.gate-ready-brand { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.gate-ready-brand > span { width: 21px; }
+.gate-ready-brand svg { display: block; }
+.gate-ready-brand small { padding-left: 7px; border-left: 1px solid rgba(255,255,255,.28); color: rgba(255,255,255,.64); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.gate-ready-card { width: min(100%, 430px); padding: 28px 24px 25px; border-radius: 22px; background: #fff; color: var(--text-primary); box-shadow: 0 28px 70px -28px rgba(0,0,0,.72); text-align: center; }
+.gate-ready-check { width: 58px; height: 58px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--valid-bg); color: var(--valid-text); font-size: 30px; font-weight: 700; }
+.gate-ready-eyebrow { color: var(--valid-text); font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.gate-ready-card h1 { margin: 5px 0 7px; font-size: 23px; line-height: 1.16; letter-spacing: -.025em; }
+.gate-ready-card p { margin: 0 auto; max-width: 330px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.gate-ready-rule { height: 1px; background: var(--border-3); margin: 22px 0 17px; }
+.gate-ready-label { text-align: left; color: var(--text-muted); font-size: 9px; letter-spacing: .09em; }
+.gate-ready-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; text-align: left; }
+.gate-ready-chip { padding: 6px 9px; border-radius: 7px; background: var(--brand-tint-bg); color: var(--brand); font-size: 11.5px; font-weight: 600; }
+.gate-ready-empty { color: var(--text-secondary); font-size: 12px; }
+.gate-ready-actions { width: min(100%, 430px); }
+.gate-ready-primary { width: 100%; min-height: 54px; padding: 0 20px; border: 0; border-radius: 13px; background: #fff; color: var(--brand); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 15px; font-weight: 700; box-shadow: 0 14px 32px -20px rgba(0,0,0,.8); cursor: pointer; }
+.gate-ready-primary span { font-size: 20px; }
+.gate-ready-note { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 7px; color: rgba(255,255,255,.66); font-size: 11px; }
+.gate-ready-note span { width: 6px; height: 6px; border-radius: 50%; background: #54d6aa; box-shadow: 0 0 0 4px rgba(84,214,170,.12); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--text-primary); color: #fff; padding: 10px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; box-shadow: var(--shadow-hover); z-index: 200;
+  animation: toast-in 160ms ease;
+}
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.section-title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.section-title-row h2 { font-size: 17px; font-weight: 700; margin: 0; }
+
+.badge-wall-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 600px) { .badge-wall-grid { grid-template-columns: 1fr; } }
+
+.top-actions { display: flex; gap: 10px; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Auth / login ---------- */
+.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.auth-card { width: 380px; max-width: 100%; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-float); padding: 32px 30px; }
+.auth-brand { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.brand-logo-img { display: block; height: auto; max-width: 100%; }
+.auth-title { font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+.auth-sub { font-size: 13px; color: var(--text-secondary); text-align: center; margin-bottom: 24px; }
+.auth-field { margin-bottom: 14px; }
+.auth-error { font-size: 12.5px; color: var(--expired-text); background: var(--expired-bg); border-radius: 7px; padding: 9px 11px; margin-bottom: 14px; display: none; }
+.auth-error.show { display: block; }
+.topnav-user { display: flex; align-items: center; gap: 10px; }
+.topnav-signout { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; background: none; border: none; font-family: inherit; }
+.topnav-signout:hover { color: var(--brand); }
+
+/* ---------- Gate scanner (js/pages/scan.js) ---------- */
+/* Dark, full-bleed and edge-to-edge on purpose: this is the one screen used
+   at arm's length outdoors, in gloves, often in sun. Dark chrome keeps the
+   camera feed the brightest thing on screen, and 100dvh (not 100vh) stops
+   Android's collapsing URL bar from pushing the reticle off-screen. */
+.scan-page { min-height: 100vh; min-height: 100dvh; background: #0b1220; color: #fff; display: flex; flex-direction: column; }
+.scan-topbar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: max(14px, env(safe-area-inset-top)) 18px 12px; }
+.scan-brand { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
+.scan-brand-mark { width: 20px; display: block; }
+.scan-brand-mark svg { display: block; width: 100%; height: auto; }
+.scan-brand-name, .scan-brand-mode { display: block; line-height: 1.15; }
+.scan-brand-mode { margin-top: 2px; color: rgba(255,255,255,.52); font-family: 'IBM Plex Mono', monospace; font-size: 8px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
+.scan-exit { color: rgba(255, 255, 255, 0.72); font-size: 13.5px; font-weight: 600; text-decoration: none; padding: 6px 4px; }
+.scan-exit:hover { color: #fff; }
+
+.scan-gate-bar { flex-shrink: 0; display: flex; align-items: center; gap: 10px; margin: 0 16px 12px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 11px; font-size: 12.5px; background: rgba(255, 255, 255, 0.075); color: rgba(255, 255, 255, 0.88); }
+.scan-gate-bar strong { font-weight: 700; color: #fff; }
+.scan-gate-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--valid-text); flex-shrink: 0; }
+.scan-gate-bar-warn { background: rgba(201, 138, 18, 0.18); color: #f2d9a4; }
+.scan-gate-bar-warn .scan-gate-dot { background: #e5aa32; }
+.scan-site-copy { flex: 1; min-width: 0; }
+.scan-site-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.scan-site-kicker { display: block; margin-bottom: 1px; color: rgba(255,255,255,.46); font-family: 'IBM Plex Mono', monospace; font-size: 8px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.scan-site-change { padding: 6px 8px; border: 0; border-radius: 7px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.72); font-size: 11px; font-weight: 600; cursor: pointer; }
+
+.scan-viewport { flex: 1; position: relative; overflow: hidden; margin: 0 16px; border-radius: 16px; background: #000; min-height: 240px; }
+/* cover, not contain — letterboxing wastes the viewfinder and makes the
+   operator hold the badge further away to fit the frame. */
+.scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(4,10,20,.24), transparent 25%, transparent 68%, rgba(4,10,20,.46)); }
+
+/* Four corner brackets rather than a full box: it frames the target without
+   occluding the feed the guard is trying to aim. */
+.scan-reticle { position: absolute; inset: 50% 50%; width: min(64vw, 260px); height: min(64vw, 260px); transform: translate(-50%, -50%); pointer-events: none; }
+.scan-reticle span { position: absolute; width: 30px; height: 30px; border: 3px solid rgba(255, 255, 255, 0.92); }
+.scan-reticle span:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+.scan-reticle span:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+.scan-reticle span:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+.scan-reticle span:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+.scan-reticle i { position: absolute; left: 12px; right: 12px; top: 12px; height: 1px; background: linear-gradient(90deg, transparent, #63efc1 15%, #63efc1 85%, transparent); box-shadow: 0 0 12px rgba(99,239,193,.75); animation: scan-sweep 2.4s ease-in-out infinite; }
+@keyframes scan-sweep { 0%, 100% { transform: translateY(0); opacity: .25; } 50% { transform: translateY(calc(min(64vw, 260px) - 25px)); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .scan-reticle i { animation: none; top: 50%; opacity: .65; } }
+
+.scan-hint { position: absolute; left: 0; right: 0; bottom: 17px; text-align: center; color: rgba(255, 255, 255, 0.84); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9); padding: 0 20px; }
+.scan-hint strong, .scan-hint span { display: block; }
+.scan-hint strong { font-size: 12.5px; }
+.scan-hint span { margin-top: 2px; color: rgba(255,255,255,.58); font-size: 10.5px; }
+
+.scan-lower { position: relative; flex-shrink: 0; min-height: 61px; padding-bottom: env(safe-area-inset-bottom); display: flex; align-items: center; justify-content: center; }
+.scan-connection { position: absolute; left: 18px; display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,.48); font-size: 10.5px; }
+.scan-connection span { width: 6px; height: 6px; border-radius: 50%; background: #54d6aa; box-shadow: 0 0 0 4px rgba(84,214,170,.1); }
+.scan-connection.is-offline { color: #e7c375; }
+.scan-connection.is-offline span { background: #d79b25; box-shadow: 0 0 0 4px rgba(215,155,37,.12); }
+.scan-status { flex-shrink: 0; min-height: 46px; max-width: 70%; margin-left: auto; display: flex; align-items: center; justify-content: flex-end; text-align: right; padding: 12px 18px; font-size: 12px; font-weight: 600; }
+.scan-status-muted { color: rgba(255, 255, 255, 0.55); font-weight: 500; }
+.scan-status-error { color: #ffb4a8; }
+
+.scan-error { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 28px; gap: 12px; }
+.scan-error-title { font-size: 18px; font-weight: 700; }
+.scan-error-detail { font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.74); max-width: 340px; }
+.scan-error .btn { margin-top: 6px; }
+.scan-error-alt { color: rgba(255, 255, 255, 0.62); font-size: 13px; text-decoration: underline; }
+
+/* Sits in the sticky footer of /r/:slug when arrived at via the scanner. */
+.scan-again-row { display: flex; gap: 10px; }
+.scan-again-row .btn { flex: 1; }
+
+/* ==========================================================================
+   Gate companion app (#/gate-app — js/pages/gateApp.js)
+   ==========================================================================
+   The kiosk that runs on a tablet at a jobsite gate. Recreated from the
+   "FieldCred Gate" design handoff with its palette and type mapped onto the
+   FieldCred brand tokens above, per that handoff's own fidelity note: the
+   layout, spacing, hierarchy, copy and state logic are the design's; the ink
+   is FieldCred navy rather than the prototype's near-black, the accent is the
+   brand rather than its orange-red, and the type is the already-loaded IBM
+   Plex rather than Archivo.
+
+   Two things from the design are kept deliberately and are NOT oversights:
+
+   * ZERO BORDER RADIUS throughout, against the rounded --radius-* tokens the
+     rest of the app uses. Squareness plus 2px rules is what makes this read
+     at arm's length as instrumentation rather than as a web page, and it
+     visually marks kiosk mode as a different place from the signed-in app.
+     Scoped to .gate-app so it cannot leak.
+   * BUTTON LABELS FLUSH LEFT with the arrow pushed right, never centered. At
+     a gate the label is read peripherally while the guard looks at the
+     worker; a left edge is a fixed target, a centered one moves with the
+     text.
+
+   The NOT CLEARED screen is a full-bleed poster in --expired-text. That
+   carries the design's intent — the verdict is the whole screen, unmissable
+   from a few feet away — using a FieldCred status token rather than
+   importing a second red into the brand. */
+
+.gate-app {
+  /* Local aliases, so every rule below reads in the design's own vocabulary
+     while resolving to brand tokens. Change the mapping here, not inline. */
+  --g-ink: var(--brand);
+  --g-ink-hover: var(--brand-hover);
+  --g-ground: var(--page-bg);
+  --g-hover: var(--brand-tint-bg);
+  --g-muted: var(--text-secondary);
+  --g-alert: var(--expired-text);
+  --g-alert-hover: #9a3025;
+  --g-valid: var(--valid-text);
+  --g-expiring: var(--expiring-text);
+  --g-expiring-ink: #8a6d1a;
+  --g-row: rgba(15, 33, 72, 0.15);
+  --g-rule: 2px solid var(--g-ink);
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  background: #dfe3e8;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  /* A guard taps this hundreds of times a shift; text selection on a
+     double-tap is never wanted and makes the app feel broken. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Full-bleed on a phone; a centered slab on a tablet or desktop, because the
+   design is a 412px-wide device and stretching a two-word headline across a
+   1080px tablet would leave the verdict floating in whitespace. */
+.gate-screen {
+  width: 100%;
+  max-width: 520px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--g-ground);
+  color: var(--g-ink);
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.gate-screen-dark { background: var(--g-ink); color: #fff; }
+.gate-screen-alert { background: var(--g-alert); color: #fff; }
+
+/* Buttons inherit their screen's ink by default so the ones that don't set a
+   color (top-bar CLOSE, tabs, lookup rows) read correctly on both the light
+   and the alert screens.
+
+   NOTE the `.gate-app` prefix on every rule below that sets a button `color`.
+   This selector is element+class (0,1,1) and so OUTWEIGHS a bare single-class
+   rule like `.gate-btn-invert` (0,1,0). Without the prefix, `color: inherit`
+   here wins and the white SCAN NEXT button on the red NOT CLEARED poster
+   renders white-on-white — invisible, on the one screen that matters most.
+   If you add a button variant that sets a color, prefix it too. */
+.gate-app button {
+  font-family: inherit;
+  border-radius: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.gate-app :focus-visible {
+  outline: 2px solid var(--g-alert);
+  outline-offset: 2px;
+}
+
+.gate-booting { margin: auto; font-size: 13px; color: var(--g-muted); }
+
+/* ---------- headers / top bars ---------- */
+.gate-header { padding: 18px; border-bottom: var(--g-rule); flex: none; }
+.gate-header-sup { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; }
+.gate-brand { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; }
+.gate-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.gate-site-name { font-size: 14px; font-weight: 700; }
+.gate-sup-ident { font-size: 11px; color: var(--g-muted); margin-top: 2px; }
+
+.gate-kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--g-muted);
+}
+.gate-kicker-spaced { margin: 20px 0 6px; }
+
+.gate-app .gate-change-link {
+  background: none;
+  border: 0;
+  padding: 6px 0 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--g-alert);
+  text-decoration: underline;
+}
+.gate-app .gate-change-link:hover { color: var(--g-alert-hover); }
+
+.gate-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: var(--g-rule);
+  flex: none;
+}
+.gate-topbar-dark, .gate-topbar-alert { border-bottom-color: #fff; }
+.gate-topbar-title { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+.gate-topbar-close {
+  background: none;
+  border: 0;
+  padding: 4px 0 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.gate-offline-banner {
+  flex: none;
+  background: var(--expiring-bg);
+  border-bottom: 2px solid var(--g-expiring);
+  padding: 9px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--g-expiring-ink);
+}
+.gate-unpaired-note {
+  flex: none;
+  padding: 10px 18px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--g-expiring-ink);
+  background: var(--expiring-bg);
+  border-bottom: 2px solid var(--g-expiring);
+}
+
+/* ---------- body regions ---------- */
+.gate-body { flex: 1; min-height: 0; padding: 24px 18px 0; display: flex; flex-direction: column; }
+.gate-body-scroll { overflow-y: auto; overscroll-behavior: contain; }
+.gate-body-flush { padding: 0 18px; }
+.gate-body-guard { padding: 18px; gap: 14px; }
+
+.gate-explainer { flex: none; padding: 14px 18px; border-bottom: 1px solid var(--g-row); font-size: 12px; line-height: 1.5; color: var(--g-muted); }
+.gate-copy { font-size: 13px; line-height: 1.5; max-width: 340px; }
+.gate-note { font-size: 11.5px; line-height: 1.5; margin-top: 12px; }
+.gate-note-warn { color: var(--g-expiring-ink); font-size: 11px; }
+.gate-rule { height: 2px; background: currentColor; margin: 18px 0 16px; flex: none; }
+.gate-rule-invert { background: #fff; }
+
+/* ---------- guard home: the scan target ---------- */
+.gate-scan-target {
+  flex: 1;
+  min-height: 200px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--g-ink);
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+.gate-scan-target:hover { background: var(--g-ink-hover); }
+.gate-scan-target-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+/* Four corner brackets. White rather than the prototype's red: these sit on
+   the navy ink block, where a navy-family accent would disappear. */
+.gate-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  pointer-events: none;
+}
+.gate-reticle i {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 0 solid #fff;
+}
+.gate-reticle i:nth-child(1) { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; }
+.gate-reticle i:nth-child(2) { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; }
+.gate-reticle i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; }
+.gate-reticle i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; }
+
+.gate-reticle-lg { width: 190px; height: 190px; }
+.gate-reticle-lg i { width: 36px; height: 36px; }
+.gate-reticle-lg b {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: #fff;
+  opacity: 0.85;
+  animation: gateScanline 2.6s ease-in-out infinite;
+}
+@keyframes gateScanline {
+  0% { top: 6%; }
+  50% { top: 88%; }
+  100% { top: 6%; }
+}
+/* The sweep is ambience, not information — the decode loop runs regardless.
+   Honour a reduced-motion preference rather than animating a bar under
+   someone who asked the system not to. */
+@media (prefers-reduced-motion: reduce) {
+  .gate-reticle-lg b { animation: none; top: 47%; }
+}
+
+.gate-app .gate-footer-link {
+  flex: none;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--g-row);
+  padding: 12px 18px 20px;
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--g-muted);
+}
+.gate-app .gate-footer-link:hover { color: var(--g-ink); }
+
+/* ---------- buttons ---------- */
+.gate-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 0;
+  margin-top: 12px;
+}
+.gate-body-guard .gate-btn { margin-top: 0; }
+.gate-app .gate-btn-outline { border: var(--g-rule); background: transparent; color: var(--g-ink); }
+.gate-btn-outline:hover { background: var(--g-hover); }
+.gate-app .gate-btn-solid { background: var(--g-ink); color: #fff; padding: 16px 18px; font-size: 15px; letter-spacing: 0.04em; }
+.gate-btn-solid:hover { background: var(--g-ink-hover); }
+/* For the two screens whose background is already ink or alert. */
+.gate-app .gate-btn-invert { background: #fff; color: var(--g-ink); padding: 16px 18px; font-size: 15px; letter-spacing: 0.04em; }
+.gate-btn-invert:hover { background: #f0ede9; }
+
+/* ---------- scanner ---------- */
+.gate-scanner-strip {
+  flex: none;
+  padding: 9px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+}
+.gate-viewport { flex: 1; position: relative; min-height: 0; overflow: hidden; background: #000; }
+.gate-video { width: 100%; height: 100%; object-fit: cover; }
+.gate-viewport-hint {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 14px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.7);
+}
+.gate-scan-error { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 18px; gap: 10px; }
+.gate-scan-error-title { font-size: 20px; font-weight: 700; }
+.gate-scan-error-detail { font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.74); margin-bottom: 8px; }
+
+/* ---------- verdicts ---------- */
+.gate-verdict-kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--g-muted);
+  flex: none;
+}
+.gate-screen-alert .gate-verdict-kicker { color: rgba(255, 255, 255, 0.75); }
+
+/* The headline is the entire message. Sized to be read from arm's length by
+   someone looking at the worker, not the tablet — hence the near-1.0 line
+   height and tight tracking, both straight from the design. */
+.gate-headline {
+  font-size: 56px;
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 10px;
+  flex: none;
+}
+.gate-headline-cleared { color: var(--g-valid); }
+.gate-headline-blocked { font-size: 50px; color: #fff; }
+.gate-headline-unknown { font-size: 44px; line-height: 0.98; color: var(--g-expiring); }
+.gate-headline-neutral { font-size: 40px; line-height: 0.98; color: var(--g-muted); }
+
+.gate-worker-row { display: flex; align-items: center; gap: 12px; flex: none; }
+.gate-avatar {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--g-ink);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+.gate-avatar-invert { background: #fff; color: var(--g-alert); }
+.gate-avatar-sm { width: 40px; height: 40px; font-size: 14px; }
+.gate-header-sup .gate-avatar-sm { width: 36px; height: 36px; font-size: 13px; }
+.gate-worker-name { font-size: 18px; font-weight: 700; }
+.gate-worker-sub { font-size: 12.5px; color: var(--g-muted); margin-top: 2px; }
+.gate-screen-alert .gate-worker-sub { color: rgba(255, 255, 255, 0.8); }
+.gate-screen-alert .gate-kicker { color: rgba(255, 255, 255, 0.75); }
+
+.gate-req-list { border-top: 1px solid var(--g-row); flex: none; }
+.gate-req-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--g-row);
+}
+.gate-req-name { font-size: 12.5px; font-weight: 600; }
+.gate-req-tag {
+  flex: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+}
+.gate-req-tag.is-valid { color: var(--g-valid); }
+.gate-req-tag.is-expiring { color: var(--g-expiring); }
+.gate-req-list-plain { border-top: var(--g-rule); }
+.gate-req-plain { padding: 11px 0; border-bottom: 1px solid var(--g-row); font-size: 13px; font-weight: 600; }
+
+.gate-missing-list { border-top: 1px solid rgba(255, 255, 255, 0.4); flex: none; }
+.gate-missing-row {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.gate-verdict-footer { flex: none; padding: 14px 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.gate-audit-line {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--g-muted);
+}
+.gate-screen-alert .gate-audit-line { color: rgba(255, 255, 255, 0.75); }
+.gate-verdict-footer .gate-btn { margin-top: 0; }
+
+/* ---------- lookup ---------- */
+.gate-lookup-search { flex: none; padding: 14px 18px; border-bottom: 1px solid var(--g-row); }
+.gate-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--g-rule);
+  border-radius: 0;
+  background: var(--surface);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--g-ink);
+  outline: none;
+}
+.gate-lookup-hint { font-size: 10.5px; line-height: 1.45; color: var(--g-muted); margin-top: 6px; }
+.gate-lookup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--g-row);
+  background: none;
+  text-align: left;
+}
+.gate-lookup-row:hover { background: var(--g-hover); }
+.gate-lookup-copy { flex: 1; min-width: 0; }
+.gate-lookup-name { display: block; font-size: 14px; font-weight: 700; }
+.gate-lookup-sub { display: block; font-size: 11.5px; color: var(--g-muted); margin-top: 2px; }
+.gate-lookup-cta { flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--g-muted); }
+.gate-lookup-empty { padding: 22px 0; font-size: 13px; line-height: 1.5; color: var(--g-muted); }
+
+/* ---------- pairing ---------- */
+.gate-site-card {
+  display: block;
+  width: 100%;
+  border: var(--g-rule);
+  background: transparent;
+  padding: 13px 14px 12px;
+  margin: 12px 0;
+  text-align: left;
+}
+.gate-site-card:hover { background: var(--g-hover); }
+.gate-site-card.is-paired { background: var(--g-hover); }
+.gate-site-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.gate-site-card-name { font-size: 14px; font-weight: 700; }
+.gate-paired-tag {
+  flex: none;
+  background: var(--g-ink);
+  color: #fff;
+  padding: 3px 7px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+.gate-site-card-reqs { display: block; font-size: 11px; line-height: 1.45; color: var(--g-muted); margin-top: 6px; }
+
+/* ---------- PIN ---------- */
+.gate-pin-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 26px; padding: 24px 40px; }
+.gate-pin-dots { display: flex; gap: 12px; margin-top: 16px; }
+.gate-pin-dot { width: 16px; height: 16px; border: var(--g-rule); background: transparent; }
+.gate-pin-dot.is-filled { background: var(--g-ink); }
+.gate-pin-error { font-size: 11px; font-weight: 600; color: var(--g-alert); margin-top: 10px; }
+.gate-pin-hint { font-size: 10.5px; line-height: 1.45; color: var(--text-muted); margin-top: 10px; }
+.gate-app .gate-pin-alt { display: block; background: none; border: 0; padding: 10px 0 0; font-size: 11px; font-weight: 600; color: var(--g-muted); text-decoration: underline; }
+.gate-pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gate-pin-key { border: var(--g-rule); background: transparent; padding: 16px 0; font-size: 18px; font-weight: 700; }
+.gate-pin-key:hover { background: var(--g-hover); }
+.gate-app .gate-pin-key:active { background: var(--g-ink); color: #fff; }
+/* Backspace sits under the 7 in a 3-wide grid, leaving the last cell empty so
+   0 stays centered under 8 the way a phone keypad does. */
+.gate-pin-key-back { font-size: 16px; }
+
+/* ---------- supervisor ---------- */
+.gate-sup-stack { display: flex; flex-direction: column; gap: 16px; }
+.gate-sup-title { font-size: 18px; font-weight: 700; }
+.gate-sup-sub { font-size: 11.5px; line-height: 1.5; color: var(--g-muted); margin: 4px 0 12px; }
+.gate-stats { display: flex; border: var(--g-rule); }
+.gate-stat { flex: 1; padding: 12px 14px; border-right: var(--g-rule); }
+.gate-stat:last-child { border-right: 0; }
+.gate-stat-value { font-size: 24px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+.gate-stat-value.is-cleared { color: var(--g-valid); }
+.gate-stat-value.is-blocked { color: var(--g-alert); }
+
+.gate-log-list { border-top: var(--g-rule); margin-top: 6px; }
+.gate-log-row { padding: 10px 0; border-bottom: 1px solid var(--g-row); }
+.gate-log-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.gate-log-who { font-size: 12.5px; font-weight: 600; }
+.gate-log-tag {
+  flex: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 3px 7px;
+}
+.gate-log-tag.is-cleared { background: var(--valid-bg); color: var(--valid-text); }
+.gate-log-tag.is-blocked { background: var(--expired-bg); color: var(--expired-text); }
+.gate-log-tag.is-unknown { background: var(--expiring-bg); color: var(--g-expiring-ink); }
+.gate-log-missing { font-size: 10.5px; line-height: 1.4; color: var(--expired-text); margin-top: 3px; }
+
+.gate-tabs { display: flex; flex: none; border-top: var(--g-rule); }
+.gate-tab {
+  flex: 1;
+  padding: 13px 0;
+  background: transparent;
+  border: 0;
+  border-left: var(--g-rule);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.gate-tab:first-child { border-left: 0; }
+.gate-tab:hover { background: var(--g-hover); }
+.gate-app .gate-tab.is-active { background: var(--g-ink); color: #fff; }

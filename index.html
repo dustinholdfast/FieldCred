@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Content Security Policy. Declared here (not only in .htaccess) so it travels
+     with the app regardless of host and can be verified locally. script-src is
+     'self' plus 'wasm-unsafe-eval' — everything is self-hosted (Supabase and the
+     Tesseract OCR engine under js/vendor/, no CDN). 'wasm-unsafe-eval' is the
+     minimal directive that lets the client-side OCR (Tesseract.js) instantiate
+     WebAssembly; it permits wasm compilation only, NOT arbitrary eval()/Function,
+     so it is far narrower than 'unsafe-eval'. worker-src allows blob: for
+     Supabase auth's token-refresh worker and the Tesseract worker.
+     media-src allows blob: for the gate scanner's live camera preview
+     (js/pages/scan.js); the camera itself is additionally gated by the
+     Permissions-Policy header in .htaccess.
+     frame-ancestors/HSTS are header-only and live in .htaccess.
+     The Railway origin in connect-src is the billing service — the admin
+     page's capacity button POSTs there for a Stripe Customer Portal
+     session. It must match BILLING_SERVICE_URL in js/lib/config.js AND the
+     CORS allowlist in billing-service/server.mjs; miss any one of the three
+     and the browser refuses the request with no visible error. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://billing-service-production-783a.up.railway.app; base-uri 'self'; form-action 'self'; object-src 'none'">
+
+<title>FieldCred — Workforce Credential Platform</title>
+<meta name="description" content="FieldCred is a live credential system for every field worker — QR verification at the gate, expiration tracking, and audit-ready reporting.">
+<meta name="theme-color" content="#0f2148">
+
+<!-- Installability (add-to-home-screen, and the Trusted Web Activity that ships
+     this app on Google Play — see README "Android app"). Every URL inside the
+     manifest is relative, so this one file serves every tenant subdomain
+     correctly without a per-tenant copy. -->
+<link rel="manifest" href="./manifest.webmanifest">
+
+<!-- Icons -->
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="./assets/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+
+<!-- Social / link previews. The app is hash-routed, so scrapers (which ignore
+     the fragment) see this one generic card for every #/… link; per-worker
+     previews would require real server-rendered paths for /r/:slug. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FieldCred">
+<meta property="og:title" content="FieldCred — Workforce Credential Platform">
+<meta property="og:description" content="Verify credentials at the gate in seconds — no login, no app. Expiration tracking and audit-ready reporting for field crews.">
+<meta property="og:image" content="https://app.fieldcred.co/assets/logo-360.png">
+<meta property="og:url" content="https://app.fieldcred.co/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="FieldCred — Workforce Credential Platform">
+<meta name="twitter:description" content="Verify credentials at the gate in seconds — no login, no app.">
+<meta name="twitter:image" content="https://app.fieldcred.co/assets/logo-360.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css">
+
+<!-- Warm up the critical module graph in parallel instead of discovering each
+     import one network hop at a time. supabase-js.js is the heaviest (~216 KB),
+     so preloading it up front removes it from the router's critical path. -->
+<link rel="modulepreload" href="./js/main.js">
+<link rel="modulepreload" href="./js/vendor/supabase-js.js">
+<link rel="modulepreload" href="./js/lib/supabaseClient.js">
+<link rel="modulepreload" href="./js/lib/router.js">
+<link rel="modulepreload" href="./js/lib/state.js">
+<link rel="modulepreload" href="./js/pages/login.js">
+<link rel="modulepreload" href="./js/pages/directory.js">
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="./js/vendor/qrcode.min.js"></script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creating your first worker profile — FieldCred Help Center</title>
+<meta name="description" content="How to add a worker's photo, contact info, skills, and certifications in FieldCred.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=getting-started">Getting started</a><span class="sep">/</span>
+    <span class="current">Creating your first worker profile</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span></div>
+    <h1 class="article-title">Creating your first worker profile</h1>
+    <p class="article-dek">Everything a worker record can hold — photo, contact info, skills, and certifications — and what's required vs. optional.</p>
+
+    <div class="article-body">
+      <p>From the Directory, click <strong>Add worker</strong>. Only one field is actually required to save a profile: <strong>Full name</strong>. Everything else can be filled in now or added later.</p>
+
+      <h2>Personal information</h2>
+      <ul>
+        <li><strong>Photo</strong> — JPG or PNG, square, max 5 MB. Until one's uploaded, the worker shows an initials avatar instead of a placeholder.</li>
+        <li><strong>Title, department, location, phone, email</strong> — standard fields. Department is a dropdown of existing departments plus "+ Add new department…" if this worker needs one that doesn't exist yet.</li>
+        <li><strong>Skills</strong> — type a skill and press Enter or comma to add it as a chip. These are searchable from the Directory later.</li>
+      </ul>
+
+      <h2>Certifications</h2>
+      <p>Click <strong>Add certification</strong> to add a row for each credential. Per certification you can set:</p>
+      <ul>
+        <li><strong>Name</strong> and <strong>issuer</strong>.</li>
+        <li><strong>Credential type</strong> — if your tenant has a credential-type catalog set up (Admin → Credential types), tag the cert with a type so it can satisfy a site's requirements. See <a href="sites-credential-requirements.html">Choosing which credential types a site requires</a>.</li>
+        <li><strong>Badge image</strong> and <strong>certificate PDF</strong> uploads.</li>
+        <li><strong>Scan cert</strong> — upload a photo of the physical card to try to auto-fill the earned/expiry dates. See <a href="certifications-scan-to-autofill.html">Scanning a certificate photo to auto-fill dates</a>.</li>
+        <li><strong>Earned</strong> and <strong>Expires</strong> dates.</li>
+        <li><strong>Verification</strong> — source (NCCER / OSHA / state board / other), card number, and a Verified checkbox. See <a href="certifications-verified-meaning.html">What "Verified" actually means</a>.</li>
+      </ul>
+
+      <div class="callout callout-note">
+        <strong>A blank Expires date isn't "valid."</strong>
+        FieldCred treats a certification with no expiry date as <strong>missing</strong> — a distinct, neutral status — rather than silently counting it as current. If you don't have the date yet, leave it blank rather than guessing; it'll show up in filters as needing attention.
+      </div>
+
+      <h2>Saving</h2>
+      <p>Click <strong>Save profile</strong>. If your plan has a worker-count limit and you're at it, you'll be prompted to remove a worker or request more capacity before a new profile can be created — this is enforced on the server, not just the button.</p>
+
+      <p>Adding several workers at once? See <a href="getting-started-bulk-import-csv.html">Bulk importing workers from a CSV</a> instead.</p>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Getting started</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="getting-started-bulk-import-csv.html">Bulk importing workers from a CSV</a>
+      <a href="certifications-verified-meaning.html">What "Verified" actually means</a>
+      <a href="certifications-scan-to-autofill.html">Scanning a certificate photo to auto-fill dates</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

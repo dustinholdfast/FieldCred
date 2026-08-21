@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setting up expiration alert emails — FieldCred Help Center</title>
+<meta name="description" content="How to configure who gets notified about expiring and expired certifications, and when.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=notifications">Notifications</a><span class="sep">/</span>
+    <span class="current">Setting up expiration alert emails</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span></div>
+    <h1 class="article-title">Setting up expiration alert emails</h1>
+    <p class="article-dek">A digest email that only fires when there's actually something expiring or expired — no "all clear" noise.</p>
+
+    <div class="article-body">
+      <p>Go to <strong>Admin → Tenant settings</strong>:</p>
+      <ul>
+        <li><strong>Notification email</strong> — where the digest is sent. Leave it blank and alerts are simply off.</li>
+        <li><strong>Time zone</strong> — the digest goes out in your tenant's own local time, not UTC.</li>
+        <li><strong>Alert frequency</strong> — Daily, or Weekly on a specific day.</li>
+        <li><strong>Time</strong> — the hour of day it sends.</li>
+      </ul>
+      <p>Click <strong>Save</strong>. That's the whole end-user setup.</p>
+
+      <div class="callout callout-note">
+        <strong>Only sends when there's something to report.</strong>
+        A run with zero expiring or expired certifications skips sending entirely — you won't get a daily "nothing to see here" email.
+      </div>
+
+      <h2>How the timing works</h2>
+      <p>The alert check runs in the background continuously, but it only actually sends a digest once per tenant per configured day (or week) — right around the hour you picked, in your time zone. Changing the time or cadence takes effect on the next check.</p>
+
+      <p>If you've set this up and a digest still didn't arrive when expected, see <a href="notifications-digest-not-sent.html">Why didn't today's digest email send?</a> for the likely reasons.</p>
+
+      <div class="callout callout-warn">
+        <strong>New tenant?</strong>
+        Alert delivery has a one-time backend setup step performed when your FieldCred instance is provisioned. If the Tenant settings fields above are configured correctly and digests still never arrive, contact support to confirm alert delivery is enabled for your account.
+      </div>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Notifications</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="notifications-digest-not-sent.html">Why didn't today's digest email send?</a>
+      <a href="troubleshooting-cert-shows-expired.html">A certificate shows as expired but I just renewed it</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

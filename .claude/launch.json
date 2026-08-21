@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fieldcred",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8844", "-t", "."],
+      "port": 8844
+    },
+    {
+      "// note": "Same server, bound to every interface so a phone on the same Wi-Fi can reach it for on-device testing. 0.0.0.0 covers loopback too, so the browser preview still works. Remember the camera needs a secure context: over a LAN IP you must add that exact origin to chrome://flags 'Insecure origins treated as secure' on the phone, or the scanner will never open.",
+      "name": "fieldcred-lan",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "0.0.0.0:8844", "-t", "."],
+      "port": 8844
+    }
+  ]
+}

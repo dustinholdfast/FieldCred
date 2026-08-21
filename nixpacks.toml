@@ -1,0 +1,5 @@
+# Forces Nixpacks to install the Node runtime, since its normal
+# auto-detection looks for a package.json at the very root of the uploaded
+# folder — ours is one level down (billing-service/package.json), so
+# without this it built an image with no Node/npm in it at all.
+providers = ["node"]

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.fieldcred.app",
+      "sha256_cert_fingerprints": [
+        "7B:BC:1C:38:91:BB:BA:BF:44:A0:3F:48:ED:84:75:F8:EB:77:F3:87:2D:61:53:00:80:C7:B5:46:5B:75:AC:AB"
+      ]
+    }
+  }
+]

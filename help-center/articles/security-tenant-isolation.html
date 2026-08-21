@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How your data is isolated from other tenants — FieldCred Help Center</title>
+<meta name="description" content="FieldCred's multi-tenant architecture: each customer gets a fully separate database, not a filtered view of a shared one.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=security">Security and privacy</a><span class="sep">/</span>
+    <span class="current">How your data is isolated from other tenants</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span></div>
+    <h1 class="article-title">How your data is isolated from other tenants</h1>
+    <p class="article-dek">Separate databases, not shared tables with a filter — here's what that means in practice.</p>
+
+    <div class="article-body">
+      <p>FieldCred is multi-tenant: each customer ("tenant") is provisioned its own separate backend project and database. This is not one shared database with a <code>tenant_id</code> column filtering what you see — it's a fully distinct project per customer. There is no query path in the app that can reach another tenant's data, because the app only ever holds credentials for the single project it was initialized against.</p>
+
+      <h2>How the app knows which tenant it is</h2>
+      <p>Which tenant's project a browser talks to is resolved by domain, or by an explicit <code>?tenant=</code> parameter in the URL. This is also why share links and password-reset links explicitly carry that parameter: a link opened on a device with no prior context for your tenant needs enough information in the URL itself to connect to the right project — otherwise it would have no way to know which one you meant.</p>
+
+      <div class="callout callout-note">
+        <strong>What this means for you.</strong>
+        Your workers, sites, credential data, and settings live in infrastructure that's entirely separate from every other FieldCred customer's. There's no cross-tenant admin view, no shared table another customer's queries could accidentally or intentionally touch.
+      </div>
+
+      <p>For what's <em>not</em> yet isolated — the fact that every signed-in user within your own tenant currently has full admin rights — see <a href="security-roles-model.html">Today's roles model — one shared admin account</a>.</p>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Security and privacy</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="security-roles-model.html">Today's roles model — one shared admin account</a>
+      <a href="public-record-what-it-shows.html">What a worker's public QR page shows (and doesn't)</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FieldCred — Keep your crew cleared to work</title>
+<meta name="description" content="FieldCred tracks worker certifications, flags expirations before they bite, and lets supervisors verify anyone at the gate with a QR scan. Free early access during the pilot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-soft:#f6f8fa;
+    --ink:#0f1c2e;
+    --body:#3d4a5c;
+    --muted:#6b7a8d;
+    --line:#e3e8ee;
+    --blue:#1d5bd6;
+    --blue-dk:#1749ab;
+    --blue-tint:#eaf1fd;
+    --green:#177245;
+    --green-tint:#e8f5ee;
+    --amber:#b26a00;
+    --amber-tint:#fdf3e2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{color:var(--ink);letter-spacing:-.02em}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .logo{font-weight:800;font-size:22px;color:var(--ink);text-decoration:none;letter-spacing:-.02em}
+  .logo span{color:var(--blue)}
+  .nav-cta{font-weight:600;font-size:15px;color:#fff;background:var(--blue);padding:10px 20px;text-decoration:none;border-radius:8px}
+  .nav-cta:hover{background:var(--blue-dk)}
+
+  .hero{padding:76px 0 88px;display:grid;grid-template-columns:1.15fr .85fr;gap:60px;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--blue);background:var(--blue-tint);padding:6px 14px;border-radius:999px;margin-bottom:22px}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--blue)}
+  .hero h1{font-size:clamp(38px,5.2vw,58px);font-weight:800;line-height:1.06;margin-bottom:20px}
+  .hero .sub{font-size:18.5px;max-width:52ch;margin-bottom:32px}
+  .btn{display:inline-block;font-weight:600;font-size:16px;text-decoration:none;border-radius:8px;padding:14px 28px}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(29,91,214,.28)}
+  .btn-primary:hover{background:var(--blue-dk)}
+  .btn-ghost{color:var(--ink);border:1.5px solid var(--line);margin-left:12px}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .hero-note{margin-top:16px;font-size:14px;color:var(--muted)}
+
+  .phone{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;max-width:340px;margin-left:auto;box-shadow:0 24px 60px rgba(15,28,46,.14)}
+  .scan-head{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;font-weight:600}
+  .scan-status{display:flex;align-items:center;gap:10px;background:var(--green-tint);border:1px solid #bfe3cf;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--green);flex:none}
+  .scan-status b{font-size:16px;color:var(--green)}
+  .worker{font-weight:700;font-size:17px;color:var(--ink)}
+  .worker small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-bottom:12px}
+  .cred{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+  .badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px}
+  .badge.ok{color:var(--green);background:var(--green-tint)}
+  .badge.warn{color:var(--amber);background:var(--amber-tint)}
+  .phone .foot{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
+
+  section{padding:76px 0}
+  .sec-soft{background:var(--bg-soft)}
+  h2{font-size:clamp(28px,3.6vw,40px);font-weight:800;line-height:1.12;margin-bottom:14px}
+  .lede{font-size:17.5px;max-width:64ch;margin-bottom:40px}
+  .kicker{color:var(--blue);font-size:13.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:12px}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px 26px;box-shadow:0 2px 8px rgba(15,28,46,.04)}
+  .step .num{width:38px;height:38px;border-radius:10px;background:var(--blue-tint);color:var(--blue);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .step h3{font-size:19px;margin-bottom:8px}
+  .step p{font-size:15px}
+
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:36px}
+  .feat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;box-shadow:0 2px 8px rgba(15,28,46,.04)}
+  .feat h3{font-size:18.5px;margin-bottom:8px}
+  .feat p{font-size:15px}
+
+  .deal{background:var(--ink);border-radius:18px;padding:44px;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;color:#c7d0dc}
+  .deal h2{color:#fff}
+  .deal .kicker{color:#7fa7f0}
+  .deal ul{list-style:none}
+  .deal li{padding:11px 0 11px 30px;position:relative;font-size:15.5px;border-bottom:1px solid #24344b}
+  .deal li:last-child{border-bottom:none}
+  .deal li::before{content:"✓";color:#6ea8ff;position:absolute;left:2px;font-weight:700}
+  .deal strong{color:#fff}
+
+  .faq{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:36px}
+  .qa{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px}
+  .qa h3{font-size:16.5px;margin-bottom:8px}
+  .qa p{font-size:14.5px}
+
+  .form-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:44px;max-width:720px;margin:0 auto;box-shadow:0 18px 50px rgba(15,28,46,.09)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .form-grid .full{grid-column:1/-1}
+  label{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  input,select,textarea{width:100%;background:#fff;border:1.5px solid var(--line);border-radius:8px;color:var(--ink);padding:12px 14px;font-size:15.5px;font-family:'Inter',sans-serif}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-tint)}
+  .submit{width:100%;border:none;cursor:pointer;margin-top:8px;font-family:'Inter',sans-serif}
+  .form-note{font-size:13px;color:var(--muted);margin-top:14px}
+  #form-status{margin-top:14px;font-weight:600;display:none;font-size:15px}
+
+  footer{border-top:1px solid var(--line);padding:32px 0;font-size:13.5px;color:var(--muted)}
+  footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+
+  @media(max-width:860px){
+    .hero{grid-template-columns:1fr;padding:48px 0 56px}
+    .phone{margin:0 auto}
+    .steps,.faq{grid-template-columns:1fr}
+    .feats{grid-template-columns:1fr}
+    .deal{grid-template-columns:1fr;padding:30px}
+    .form-grid{grid-template-columns:1fr}
+    .btn-ghost{margin-left:0;margin-top:10px;display:inline-block}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="logo" href="#">Field<span>Cred</span></a>
+    <a class="nav-cta" href="#pilot">Join the pilot</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="pill">Now in pilot — free early access</span>
+      <h1>The GC wants every cert before Monday.</h1>
+      <p class="sub">FieldCred keeps crews cleared to work — every worker's certifications tracked, expirations flagged before they bite, and a QR scan at the gate that shows who's current. No logins. No callbacks to the office.</p>
+      <a class="btn btn-primary" href="#pilot">Join the pilot — free</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+      <p class="hero-note">Free during the pilot · No credit card · Bring a real crew roster and see if it holds up</p>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <div class="scan-head">Gate scan · 6:02 AM</div>
+      <div class="scan-status"><span class="dot"></span><b>Cleared to work</b></div>
+      <div class="worker">M. Alvarez <small>Ironworker · Roster #114</small></div>
+      <div class="cred"><span>OSHA 30</span><span class="badge ok">Current</span></div>
+      <div class="cred"><span>Aerial Lift Operator</span><span class="badge ok">Current</span></div>
+      <div class="cred"><span>Site Orientation</span><span class="badge ok">Current</span></div>
+      <div class="cred"><span>Forklift Cert</span><span class="badge warn">Renew in 41 days</span></div>
+      <div class="foot">Scanned by supervisor · no login required</div>
+    </div>
+  </header>
+</div>
+
+<section class="sec-soft" id="problem">
+  <div class="wrap">
+    <span class="kicker">The problem</span>
+    <h2>Your tracking system fails in public.</h2>
+    <p class="lede" style="margin-bottom:0">A spreadsheet, a binder in the site trailer, and one person's memory. It works — right up until a worker gets bounced at the gate in front of the client, a mobilization stalls waiting on paperwork, or an auditor asks for training records nobody can find. Certs don't fail at renewal time. They fail quietly, months earlier, in a spreadsheet nobody opened.</p>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <span class="kicker">How it works</span>
+    <h2>Roster in. QR out. That's the rollout.</h2>
+    <p class="lede">The office does the setup once. The field crew's workflow changes by exactly one scan.</p>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Load the roster</h3><p>Add your workers and their credentials — OSHA cards, trade licenses, operator permits, site orientations. Everything in one tracked place.</p></div>
+      <div class="step"><div class="num">2</div><h3>Nothing lapses silently</h3><p>Every expiration is flagged ahead of time. Renewals become scheduling on a calendar instead of emergencies at the gate.</p></div>
+      <div class="step"><div class="num">3</div><h3>Scan at the gate</h3><p>Every worker carries a QR code. The supervisor scans it and sees who's current in seconds. No worker logins. No calls to the office.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec-soft">
+  <div class="wrap">
+    <span class="kicker">What you get</span>
+    <h2>Built for the gate, not the filing cabinet.</h2>
+    <div class="feats">
+      <div class="feat"><h3>Know before it bites</h3><p>Every credential in one place with expirations flagged weeks ahead — so the first you hear of a lapsed card isn't from the GC's compliance team.</p></div>
+      <div class="feat"><h3>Verified in seconds</h3><p>Scan. See. Wave through. Current status for any worker, on any phone, at any gate — without a single password.</p></div>
+      <div class="feat"><h3>Audit-ready, no scramble</h3><p>When the GC, client, or an inspector asks for training records, the answer comes from the platform — minutes, not a week of archaeology.</p></div>
+      <div class="feat"><h3>The field doesn't do logins</h3><p>Workers don't need accounts or an app. If your compliance system needs a callback to the office, it's an office system. This one isn't.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="deal">
+      <div>
+        <span class="kicker">Straight talk</span>
+        <h2>FieldCred is new. Here's the deal.</h2>
+        <p style="font-size:16px;margin-top:6px">We're not going to pretend there are a thousand logos below this line. There aren't. What there is: a product that works end-to-end today, and a pilot built to prove it on real crews.</p>
+      </div>
+      <ul>
+        <li>The core loop — tracking, expiration alerts, QR gate verification — is built and working now.</li>
+        <li>Early access is <strong>free during the pilot</strong>. No credit card, no lock-in.</li>
+        <li>Pilot users get a direct line to us — what you need shapes what gets built next.</li>
+        <li>If it doesn't hold up on your roster, walk away. You'll have lost nothing.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec-soft">
+  <div class="wrap">
+    <span class="kicker">Fair questions</span>
+    <h2>Asked and answered.</h2>
+    <div class="faq">
+      <div class="qa"><h3>"My guys won't use an app."</h3><p>They don't have to. Workers carry a QR code; supervisors scan it. Zero worker logins, zero training rollout for the crew.</p></div>
+      <div class="qa"><h3>"HR already stores the certs."</h3><p>Storage isn't verification. HR answers "do we have a copy." FieldCred answers "is this worker cleared, right now, at this gate." Run it alongside HR, not instead of it.</p></div>
+      <div class="qa"><h3>"The spreadsheet works fine."</h3><p>Until the person who runs it is on vacation, or the audit lands. The spreadsheet stores; it doesn't warn — and it isn't standing at the gate.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pilot">
+  <div class="wrap">
+    <div class="form-card">
+      <span class="kicker">Join the pilot</span>
+      <h2 style="margin-bottom:8px">Free early access.</h2>
+      <p style="margin-bottom:28px">Tell us about your crew. We'll get you set up and walk the first roster in with you.</p>
+      <!-- TODO: Replace YOUR_ACCESS_KEY_HERE with a real key from web3forms.com (free — forwards submissions to your email). -->
+      <form id="pilot-form" class="form-grid" action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE">
+        <input type="hidden" name="subject" value="FieldCred pilot signup">
+        <div><label for="name">Name</label><input id="name" name="name" required autocomplete="name"></div>
+        <div><label for="company">Company</label><input id="company" name="company" required autocomplete="organization"></div>
+        <div><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="email"></div>
+        <div><label for="phone">Phone (optional)</label><input id="phone" name="phone" type="tel" autocomplete="tel"></div>
+        <div class="full"><label for="size">Field workers</label>
+          <select id="size" name="field_workers" required>
+            <option value="" disabled selected>How many workers do you track?</option>
+            <option>Under 20</option><option>20–100</option><option>100–500</option><option>500+</option>
+          </select>
+        </div>
+        <div class="full"><label for="pain">Biggest credential headache (optional)</label><textarea id="pain" name="headache" rows="3" placeholder="e.g., GC records requests, expired operator certs, audit prep..."></textarea></div>
+        <div class="full"><button class="btn btn-primary submit" type="submit">Join the pilot — free</button>
+          <p id="form-status"></p>
+          <p class="form-note">We'll only use this to set up your pilot access. No newsletter unless you ask for it.</p>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 FieldCred. Built for the field.</div>
+    <div>FieldCred tracks and verifies credential records. It is not affiliated with or endorsed by OSHA or any certification issuer.</div>
+  </div>
+</footer>
+
+<script>
+  const form=document.getElementById('pilot-form'),status=document.getElementById('form-status');
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    status.style.display='block';status.style.color='#3d4a5c';status.textContent='Sending...';
+    try{
+      const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
+      if(res.ok){status.style.color='#177245';status.textContent='Got it. We\'ll be in touch to set up your pilot access.';form.reset();}
+      else{throw new Error();}
+    }catch{status.style.color='#b3261e';status.textContent='Something went wrong — email us instead: pilot@fieldcred.com';}
+  });
+</script>
+</body>
+</html>

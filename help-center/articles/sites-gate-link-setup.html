@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setting up a site's gate link — FieldCred Help Center</title>
+<meta name="description" content="How to point a gate device at a site so worker scans show a clearance banner.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=sites-gate">Sites and gate scans</a><span class="sep">/</span>
+    <span class="current">Setting up a site's gate link</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span><span class="role-pill">Gate staff</span></div>
+    <h1 class="article-title">Setting up a site's gate link</h1>
+    <p class="article-dek">The one-time step that tells a device which site to check clearance against.</p>
+
+    <div class="article-body">
+      <p>Every site has its own <strong>gate link</strong> — a public URL, shown on the site's detail page under Site settings, that looks like <code>…/#/gate/your-site-slug</code>. Opening it on a device remembers that site on <em>that device</em> (in its local storage), so every worker badge scanned there afterward shows a clearance banner for it.</p>
+
+      <h2>Setting it up</h2>
+      <ol>
+        <li>Go to <strong>Sites</strong> → the site → find <strong>Gate link</strong> in Site settings.</li>
+        <li>Click the field to select it, then copy it — or print the link as a QR code and post it at the physical gate.</li>
+        <li>On the tablet or phone that will actually scan badges, open that link (or scan the posted QR) <strong>once</strong>.</li>
+        <li>From then on, scanning any worker's badge/QR on that device shows a green "Cleared" or red "Not cleared" banner for this specific site.</li>
+      </ol>
+
+      <div class="callout callout-warn">
+        <strong>Every device needs this done separately.</strong>
+        The gate site is remembered per-device, not per-account. A second tablet at the same gate needs the same link opened on it too. To point a device at a different site later, open that site's gate link — it overwrites the previous one — or use "Clear gate site" on the worker record page.
+      </div>
+
+      <p>If a device is scanning badges and never shows a clearance banner at all — not even a red one — the gate link almost certainly hasn't been opened on it yet. See <a href="troubleshooting-clearance-banner.html">Why isn't the clearance banner showing?</a> for the exact symptom and fix.</p>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Sites and gate scans</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="troubleshooting-clearance-banner.html">Why isn't the clearance banner showing?</a>
+      <a href="sites-credential-requirements.html">Choosing which credential types a site requires</a>
+      <a href="offline-mode-gate.html">How offline mode works at the gate</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

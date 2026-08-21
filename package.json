@@ -1,0 +1,13 @@
+{
+  "name": "fieldcred",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FieldCred — workforce credential platform (no build step; static ES modules + Supabase).",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.2"
+  }
+}

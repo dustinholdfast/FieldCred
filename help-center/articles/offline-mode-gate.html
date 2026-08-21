@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How offline mode works at the gate — FieldCred Help Center</title>
+<meta name="description" content="How FieldCred keeps gate scanning working with no signal, and exactly what's cached vs. not.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=offline">Offline mode</a><span class="sep">/</span>
+    <span class="current">How offline mode works at the gate</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Gate staff</span></div>
+    <h1 class="article-title">How offline mode works at the gate</h1>
+    <p class="article-dek">Jobsite gates have bad signal — here's exactly what still works when there's none, and what doesn't.</p>
+
+    <div class="article-body">
+      <p>FieldCred caches data <strong>opportunistically</strong> on each device: the first time a worker's record is successfully loaded online on a given tablet or phone, it's saved locally on that device. If that same worker is scanned again later with no signal, the device falls back to the cached copy automatically.</p>
+
+      <h2>What you'll see offline</h2>
+      <ul>
+        <li>A clearance banner (green "Cleared" or red "Not cleared") still shows, computed against the cached worker record and cached site requirements.</li>
+        <li>An <strong>"Offline — showing cached data from …"</strong> notice appears above it, so it's never mistaken for a live result.</li>
+        <li>If that cached data is over 24 hours old, the notice specifically flags it as stale and suggests confirming another way if possible.</li>
+      </ul>
+
+      <div class="callout callout-note">
+        <strong>The scan still counts.</strong>
+        A gate scan attempted with no signal is queued on the device rather than dropped. As soon as the device regains a connection — checked on app open and automatically whenever the browser detects it's back online — every queued scan is sent to the real audit log, with clearance re-derived from the worker's current record at that time (not the possibly-stale cached snapshot that was on screen during the scan).
+      </div>
+
+      <p>The app itself (not just worker data) also loads with no signal — its own pages/JS/CSS are cached separately, so a gate tablet with zero bars can still open FieldCred at all, not just use cached records inside it.</p>
+
+      <p>For the one real limitation of this system, see <a href="offline-first-time-worker.html">Why a first-time worker can't be checked with no signal</a>.</p>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Offline mode</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="offline-first-time-worker.html">Why a first-time worker can't be checked with no signal</a>
+      <a href="sites-gate-link-setup.html">Setting up a site's gate link</a>
+      <a href="troubleshooting-record-not-available.html">A worker's page says "this record isn't available"</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

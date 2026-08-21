@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turning off a worker's public link — FieldCred Help Center</title>
+<meta name="description" content="How to disable or expire a worker's public share link using the Share dialog.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=public-records">Public records</a><span class="sep">/</span>
+    <span class="current">Turning off a worker's public link</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span></div>
+    <h1 class="article-title">Turning off a worker's public link</h1>
+    <p class="article-dek">Two controls: an instant on/off switch, and an automatic expiry date.</p>
+
+    <div class="article-body">
+      <p>Open the <strong>Share</strong> dialog from a worker's card in the Directory (or their profile) — the share icon opens a QR code, copyable link, and two controls that govern whether that link actually works.</p>
+
+      <h2>Public view toggle</h2>
+      <p>This switches the record on or off immediately. Turn it off and the link stops resolving right away — anyone visiting it (including via a previously printed QR code) sees "This record isn't available." Turn it back on and the same link works again instantly; the underlying slug never changes, so you don't need to reprint anything.</p>
+
+      <h2>Link expires</h2>
+      <p>Set the link to expire <strong>never</strong>, or automatically in <strong>7, 30, or 90 days</strong> from whenever you set it. This is enforced on the server, not just hidden in the UI — once the date passes, the link stops resolving the same way a manually disabled one does.</p>
+
+      <div class="callout callout-note">
+        <strong>Both controls stop the same page, the same way.</strong>
+        A worker viewing an off/expired link and one that never existed both just see "This record isn't available" — no detail is given publicly about which case it is. See <a href="troubleshooting-record-not-available.html">A worker's page says "this record isn't available"</a> for the admin-side troubleshooting checklist.
+      </div>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Public records</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="public-record-what-it-shows.html">What a worker's public QR page shows (and doesn't)</a>
+      <a href="troubleshooting-record-not-available.html">A worker's page says "this record isn't available"</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

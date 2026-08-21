@@ -1,0 +1,9 @@
+{
+  "name": "fieldcred-supabase-tooling",
+  "private": true,
+  "description": "Admin/provisioning scripts only — not part of the shipped app, which stays build-step-free. Run `npm install` in this folder before using provision-tenant.mjs.",
+  "type": "module",
+  "dependencies": {
+    "pg": "^8.11.0"
+  }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FieldCred — Tenant Provisioning (local)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; color: #1c2430; background: #f5f6f8; }
+  h1 { font-size: 20px; }
+  .warn { background: #fff4e5; border: 1px solid #f0b429; border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 24px; }
+  form { background: #fff; border: 1px solid #e2e5ea; border-radius: 10px; padding: 22px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #5b6472; margin-bottom: 5px; }
+  input, select { width: 100%; padding: 9px 10px; border: 1px solid #d8dde3; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+  .hint { font-size: 12px; color: #8a919e; margin-top: 4px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  details { margin-bottom: 16px; }
+  summary { cursor: pointer; font-size: 12.5px; color: #5b6472; }
+  button { background: #0f2148; color: #fff; border: none; border-radius: 6px; padding: 11px 18px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #log { margin-top: 20px; background: #0f1720; color: #d8e0ea; border-radius: 8px; padding: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; white-space: pre-wrap; max-height: 360px; overflow-y: auto; display: none; }
+  #log .fail { color: #f28b82; }
+  #log .ok { color: #81c995; }
+  #err { color: #b23a2e; font-size: 13px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+  <h1>FieldCred — Tenant Provisioning</h1>
+  <div class="warn">
+    Local tool only — do not deploy this folder to the PHP host. Runs
+    <code>provision-tenant.mjs --apply-registry</code> for you; still need
+    to review and FTP-upload <code>tenants.php</code> after. Requires the
+    <code>?token=</code> link with your <code>ADMIN_DASHBOARD_TOKEN</code> —
+    if you're seeing this without one, bookmark the link the server printed
+    on startup.
+  </div>
+
+  <form id="form">
+    <div class="field">
+      <label for="name">Company name</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="slug">Tenant slug</label>
+        <input type="text" id="slug" pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]" required placeholder="acme">
+        <div class="hint">lowercase, hyphens ok, used in URLs</div>
+      </div>
+      <div class="field">
+        <label for="adminEmail">Admin email</label>
+        <input type="email" id="adminEmail" required placeholder="admin@acme.com">
+      </div>
+    </div>
+    <div class="field">
+      <label for="domains">Email domain(s) for auto-login <span style="text-transform:none;">(optional)</span></label>
+      <input type="text" id="domains" placeholder="acmecorp.com, acme-inc.com">
+      <div class="hint">comma-separated — lets their staff sign in without a ?tenant= link</div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="planTier">Plan tier</label>
+        <select id="planTier">
+          <option value="unlimited">Unlimited</option>
+          <option value="starter">Starter</option>
+          <option value="growth" selected>Growth</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="maxWorkers">Worker cap <span style="text-transform:none;">(blank = unlimited)</span></label>
+        <input type="number" id="maxWorkers" min="1" value="100">
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced (organization / region / billing)</summary>
+      <div class="field" style="margin-top:12px;">
+        <label for="organizationId">Supabase organization ID</label>
+        <input type="text" id="organizationId" value="nsbnntisxkfvxyiaffyk">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label for="region">Region</label>
+          <input type="text" id="region" value="us-east-2">
+        </div>
+        <div class="field">
+          <label for="billingPlan">Billing plan</label>
+          <select id="billingPlan">
+            <option value="free" selected>Free</option>
+            <option value="pro">Pro</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <button type="submit" id="submit">Provision tenant</button>
+    <div id="err"></div>
+  </form>
+
+  <div id="log"></div>
+
+<script>
+const form = document.getElementById('form');
+const submitBtn = document.getElementById('submit');
+const logEl = document.getElementById('log');
+const errEl = document.getElementById('err');
+
+// The server already required this token to serve this page at all (see
+// server.mjs's isAuthorized check on GET /) — pull it out of the URL so it
+// doesn't sit in browser history/logs as plaintext, keep it only for this
+// tab's lifetime (sessionStorage, not localStorage), and send it back on
+// every /provision call since that check is enforced independently there.
+const urlToken = new URLSearchParams(location.search).get('token');
+if (urlToken) {
+  sessionStorage.setItem('fc_admin_token', urlToken);
+  const cleanUrl = location.pathname;
+  history.replaceState({}, '', cleanUrl);
+}
+const adminToken = sessionStorage.getItem('fc_admin_token') || '';
+
+function appendLog(text, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = text;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  errEl.style.display = 'none';
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Provisioning…';
+
+  const payload = {
+    name: document.getElementById('name').value,
+    slug: document.getElementById('slug').value,
+    adminEmail: document.getElementById('adminEmail').value,
+    domains: document.getElementById('domains').value,
+    planTier: document.getElementById('planTier').value,
+    maxWorkers: document.getElementById('maxWorkers').value,
+    organizationId: document.getElementById('organizationId').value,
+    region: document.getElementById('region').value,
+    billingPlan: document.getElementById('billingPlan').value,
+  };
+
+  fetch('/provision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+    body: JSON.stringify(payload),
+  }).then(async (res) => {
+    if (!res.ok || !res.body) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    function pump() {
+      return reader.read().then(({ done, value }) => {
+        if (done) return;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop();
+        for (const raw of events) {
+          const eventLine = raw.split('\n').find((l) => l.startsWith('event: '));
+          const dataLine = raw.split('\n').find((l) => l.startsWith('data: '));
+          if (!eventLine || !dataLine) continue;
+          const event = eventLine.slice(7);
+          const data = JSON.parse(dataLine.slice(6));
+          if (event === 'log') appendLog(data);
+          if (event === 'done') {
+            appendLog('\n✓ Provisioning complete.', 'ok');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Provision tenant';
+          }
+          if (event === 'failed') {
+            appendLog(`\n✗ Failed (exit code ${data.code}). Fix the issue above and submit again — it resumes safely.`, 'fail');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Retry';
+          }
+        }
+        return pump();
+      });
+    }
+    return pump();
+  }).catch((err) => {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Provision tenant';
+  });
+});
+</script>
+</body>
+</html>

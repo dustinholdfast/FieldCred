@@ -1,0 +1,65 @@
+# Deploy footprint for billing-service on Railway. Uploaded from the repo
+# root so supabase/ stays a sibling directory to billing-service/ (needed —
+# billing-service spawns supabase/provision-tenant.mjs as a child process,
+# see billing-service/lib/provision.mjs). Everything else in the repo is
+# irrelevant to this service and excluded, same spirit as DEPLOY.md's list
+# for the PHP host but inverted (there supabase/ is excluded; here it's the
+# one thing besides billing-service/ that must be included).
+
+# The website itself — not this service's concern.
+android/
+assets/
+css/
+help-center/
+js/
+Marketing/
+tests/
+vendor/
+*.png
+*.zip
+*.webmanifest
+index.html
+knowledge-base.html
+sw.js
+.htaccess
+.well-known/
+
+# Root-level PHP endpoints and their config — not this service either.
+*.php
+
+# Repo/tooling noise. Leading slash anchors these to the repo root ONLY —
+# without it, "package.json" would also match billing-service/package.json
+# and supabase/package.json, which is exactly what npm install needs to
+# find. (This bit us on the first deploy attempt — fixed here.)
+.git/
+.claude/
+.agents/
+/node_modules/
+/README.md
+/CHANGES.md
+/DEPLOY.md
+/package.json
+/package-lock.json
+
+# supabase/ subfolder: keep only what provision-tenant.mjs/fleet-migrate.mjs
+# need (schema, migrations, the scripts themselves, their own package.json).
+# Exclude the admin dashboard (never deployed anywhere, local-only tool),
+# the manifests directory (can carry adminEmail from past runs), any local
+# node_modules (Railway's build installs fresh for the right platform), and
+# absolutely never the secrets file.
+supabase/admin-dashboard/
+supabase/manifests/
+supabase/node_modules/
+supabase/.env.local
+supabase/.env
+supabase/*.md
+supabase/schema-demo-dump.sql
+supabase/schema.sql.pre-step3-backup.sql
+supabase/seed_demo.sql
+supabase/reset_demo.sql
+
+# billing-service's own node_modules — Railway's build installs these
+# fresh too, don't ship a Windows-built copy into a Linux container.
+billing-service/node_modules/
+billing-service/.env.local
+billing-service/.env

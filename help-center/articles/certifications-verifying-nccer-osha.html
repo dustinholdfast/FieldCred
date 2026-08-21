@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifying an NCCER or OSHA card — FieldCred Help Center</title>
+<meta name="description" content="Step-by-step: how to check an NCCER or OSHA card against the real issuing portal and mark it Verified in FieldCred.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=certifications">Certifications</a><span class="sep">/</span>
+    <span class="current">Verifying an NCCER or OSHA card</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span></div>
+    <h1 class="article-title">Verifying an NCCER or OSHA card</h1>
+    <p class="article-dek">FieldCred points you at the real issuing portal — you do the lookup, then record the result.</p>
+
+    <div class="article-body">
+      <h2>1. Set the source and card number</h2>
+      <p>On the certification's editor, set <strong>Verification source</strong> to NCCER or OSHA, and enter the <strong>Card / cert #</strong> exactly as printed. FieldCred then shows a fixed link to that source's real portal — this can't be redirected anywhere else:</p>
+      <ul>
+        <li><strong>NCCER</strong> → the NCCER Registry's Online Verification, a login-gated lookup by card number.</li>
+        <li><strong>OSHA</strong> → OSHA doesn't run one central verification service; card issuance is spread across individual Authorized Training Organizations. The linked aggregator portal covers many providers, but not all — if a card doesn't turn up there, that alone isn't proof it's invalid.</li>
+      </ul>
+
+      <h2>2. Look it up</h2>
+      <p>Open the portal link, search by the card number, and confirm the name and credential match what's on file in FieldCred.</p>
+
+      <h2>3. Record it</h2>
+      <p>Back in FieldCred, check <strong>"I checked this on the portal above and confirmed it's real."</strong> This stamps your email and the current time as the verification record, and shows a green Verified pill on the cert going forward.</p>
+
+      <div class="callout callout-note">
+        <strong>The card number is shown on the public record too — on purpose.</strong>
+        It's already printed on the physical badge a worker hands over at a gate, so showing it on the public <code>/r/:slug</code> page isn't a new exposure — it's what makes the Verify link actually usable by whoever's standing at the gate.
+      </div>
+
+      <p>Not an NCCER or OSHA card? Choose <strong>State board / other</strong> instead and paste a verification URL directly — FieldCred rejects unsafe link schemes (like <code>javascript:</code>) automatically, both when you save and when the link renders on the public page.</p>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Certifications</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="certifications-verified-meaning.html">What "Verified" actually means</a>
+      <a href="certifications-scan-to-autofill.html">Scanning a certificate photo to auto-fill dates</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A worker's page says "this record isn't available" — FieldCred Help Center</title>
+<meta name="description" content="The three real causes behind this message, and how to tell which one applies.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/kb.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="../index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Help Center</span>
+    </a>
+    <form class="header-search" id="kb-header-search" data-index-href="../index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg>
+      <input type="text" placeholder="Search articles…" autocomplete="off">
+    </form>
+    <div class="header-links">
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="../index.html">Help Center</a><span class="sep">/</span>
+    <a href="../index.html?cat=troubleshooting">Troubleshooting</a><span class="sep">/</span>
+    <span class="current">A worker's page says "this record isn't available"</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Admin</span><span class="role-pill">Gate staff</span></div>
+    <h1 class="article-title">A worker's page says "this record isn't available"</h1>
+    <p class="article-dek">One message, a couple of different causes — here's how to tell which applies and what to do about it.</p>
+
+    <div class="article-body">
+      <p>FieldCred shows one of two specific messages here, and they point to different fixes:</p>
+
+      <h2>"No signal, and this device hasn't cached this worker before…"</h2>
+      <p>This is a connectivity issue, not a data problem. The device is offline and has never successfully loaded this specific worker before, so there's no local cache to fall back to. Get the device online once — even briefly — revisit the record, and it'll be cached for offline use from then on. See <a href="offline-first-time-worker.html">Why a first-time worker can't be checked with no signal</a>.</p>
+
+      <h2>"The link may have expired, been turned off, or removed."</h2>
+      <p>This is shown when there's a live connection, but the record genuinely doesn't resolve. This is <strong>fail-closed by design</strong> — FieldCred deliberately doesn't tell an anonymous public visitor which of these applies, since that distinction (does this person still work here? did an admin intentionally hide their record?) isn't public information. As an admin, check:</p>
+      <ul>
+        <li>The worker still exists in your Directory — search for them.</li>
+        <li>If they exist: open their <strong>Share dialog</strong> and confirm <strong>Public view</strong> is on, and <strong>Link expires</strong> hasn't passed. See <a href="public-record-turning-off-link.html">Turning off a worker's public link</a>.</li>
+        <li>If none of that explains it, the worker's profile may have been deleted — that's permanent and can't be undone from this page.</li>
+      </ul>
+
+      <div class="callout callout-note">
+        <strong>This is intentional, not a bug to report.</strong>
+        Giving an anonymous visitor more detail than "unavailable" here would leak information about your workforce that shouldn't be public — so the vague message is the correct behavior, even though it's not very diagnostic on its own.
+      </div>
+    </div>
+
+    <div class="article-meta">
+      <span>Category: Troubleshooting</span>
+      <span>Last updated July 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>Related articles</h3>
+    <div class="related-list">
+      <a href="public-record-turning-off-link.html">Turning off a worker's public link</a>
+      <a href="offline-first-time-worker.html">Why a first-time worker can't be checked with no signal</a>
+      <a href="troubleshooting-clearance-banner.html">Why isn't the clearance banner showing?</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Still stuck?</div>
+        <div class="ct-sub">Send us the details and we'll get back to you.</div>
+      </div>
+      <a class="btn" href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">help.fieldcred.co</span>
+  </div>
+</footer>
+
+<script src="../assets/kb.js"></script>
+</body>
+</html>

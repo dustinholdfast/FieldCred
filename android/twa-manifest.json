@@ -1,0 +1,57 @@
+{
+  "packageId": "com.fieldcred.app",
+  "host": "app.fieldcred.co",
+  "name": "FieldCred",
+  "launcherName": "FieldCred",
+  "display": "standalone",
+  "themeColor": "#0F2148",
+  "themeColorDark": "#0F2148",
+  "navigationColor": "#0B1220",
+  "navigationColorDark": "#0B1220",
+  "navigationDividerColor": "#0B1220",
+  "navigationDividerColorDark": "#0B1220",
+  "backgroundColor": "#F5F6F8",
+  "enableNotifications": false,
+  "startUrl": "/#/gate-app",
+  "iconUrl": "https://app.fieldcred.co/assets/icon-512.png",
+  "maskableIconUrl": "https://app.fieldcred.co/assets/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../../fieldcred-release.keystore",
+    "alias": "fieldcred"
+  },
+  "appVersionName": "1.0.1",
+  "appVersionCode": 10,
+  "shortcuts": [
+    {
+      "name": "Scan a badge",
+      "shortName": "Scan",
+      "url": "/#/scan",
+      "chosenIconUrl": "https://app.fieldcred.co/assets/icon-192.png"
+    },
+    {
+      "name": "Directory",
+      "shortName": "Directory",
+      "url": "/#/directory",
+      "chosenIconUrl": "https://app.fieldcred.co/assets/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://app.fieldcred.co/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://app.fieldcred.co/",
+  "minSdkVersion": 23,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "1.0.1"
+}

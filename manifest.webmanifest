@@ -1,0 +1,56 @@
+{
+  "id": "/",
+  "name": "FieldCred — Workforce Credentials",
+  "short_name": "FieldCred",
+  "description": "Scan a worker's badge at the gate and see in seconds whether they're cleared for this site — works with no signal.",
+  "start_url": "./#/gate-app",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#0f2148",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan a badge",
+      "short_name": "Scan",
+      "description": "Open the camera straight away, without the gate kiosk around it.",
+      "url": "./#/scan",
+      "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Directory",
+      "short_name": "Directory",
+      "description": "Browse workers and their credentials (requires sign-in).",
+      "url": "./#/directory",
+      "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+# FieldCred — security headers + cache policy (LiteSpeed/Apache honor this).
+#
+# The Content-Security-Policy itself lives in index.html's <meta> tag so it
+# travels with the app and can be verified locally; this file adds the
+# directives a <meta> tag cannot express (framing, HSTS) plus a cache policy.
+
+<IfModule mod_headers.c>
+  # Clickjacking: this app is never meant to be framed.
+  Header always set X-Frame-Options "DENY"
+  # Don't let browsers MIME-sniff responses into a different type.
+  Header always set X-Content-Type-Options "nosniff"
+  # Send only the origin (not the full path/query) on cross-origin requests.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Turn off powerful features the app never uses. camera=(self) is the one
+  # exception: the in-app gate scanner (js/pages/scan.js) needs getUserMedia so
+  # a guard can scan badge after badge without bouncing out to the phone's
+  # native camera app. (self) permits only this origin — never an embedded
+  # third party — and the app is never framed anyway (X-Frame-Options above).
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(self), payment=(), usb=(), interest-cohort=()"
+  # HSTS: force HTTPS for two years. Safe here — the app is HTTPS-only already.
+  Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains"
+</IfModule>
+
+# Serve ES modules with a JavaScript MIME type. Many servers send .mjs as
+# application/octet-stream by default; combined with the nosniff header above,
+# the browser then refuses to execute it and the whole app fails to boot. The
+# vendored Supabase bundle (js/vendor/supabase-js.js) imports .mjs node shims,
+# so this is required, not optional.
+<IfModule mod_mime.c>
+  AddType text/javascript .mjs
+  # Same story for the web app manifest: served as octet-stream by default on
+  # many hosts, which (with nosniff above) makes Chrome reject it and silently
+  # drop installability — no install prompt, and the Play Store TWA fails its
+  # Digital Asset Links / manifest checks.
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# ---- Cache policy ----
+# The app ships unhashed filenames, so a long-lived cached module can go stale
+# against a freshly deployed one and break mid-session. HTML/CSS/JS therefore
+# revalidate every load (a conditional request → cheap 304 when unchanged),
+# while static media, which changes rarely and is safe to serve stale, is
+# cached hard.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|css|js|mjs)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpg|jpeg|svg|webp|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>
+
+# Never serve the tenant registry or server-side config as readable files —
+# they're only ever included via PHP require(). PHP files execute (returning
+# empty output) rather than listing, but block the source paths explicitly too.
+<FilesMatch "^(tenants|signup-config)\.php$">
+  Require all denied
+</FilesMatch>

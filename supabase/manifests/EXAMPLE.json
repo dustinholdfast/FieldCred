@@ -1,0 +1,11 @@
+{
+  "slug": "acme",
+  "name": "Acme Corp",
+  "organizationId": "nsbnntisxkfvxyiaffyk",
+  "region": "us-east-2",
+  "adminEmail": "admin@acmecorp.com",
+  "domains": ["acmecorp.com"],
+  "planTier": "growth",
+  "maxWorkers": 100,
+  "billingPlan": "free"
+}
