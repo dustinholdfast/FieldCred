@@ -4,9 +4,13 @@
 // this is purely for notifying you (the operator) of a new signup request
 // so you can provision it by hand per supabase/PROVISIONING.md.
 //
+// Also holds billingServiceUrl, which tenant-lookup.php and
+// tenant-lookup-by-domain.php use as the primary registry endpoint
+// (with tenants.php as the resilient fallback).
+//
 // Same protection pattern as tenants.php: only ever read server-side via
-// `require`; hitting it directly in a browser executes it as PHP with no
-// output rather than leaking the array.
+// `require` / `include`; hitting it directly in a browser executes it as
+// PHP with no output rather than leaking the array.
 //
 // Get a Resend API key the same way as supabase/functions/expiration-alerts/
 // SETUP.md describes (resend.com, free tier). This can be the same key or
@@ -15,8 +19,8 @@
 // using their onboarding@resend.dev test address).
 
 return [
-    'resendApiKey' => 're_7SP4mPAH_Pm9Y82WfM7PHL3gwSR7UCPoP', // TODO: fill in
-    'resendFrom' => 'FieldCred <onboarding@fieldcred.co>', // TODO: swap once you verify your own sending domain
-    'notifyEmail' => 'dustin@fieldcred.co', // TODO: where signup requests get sent
-'billingServiceUrl' => 'https://billing-service-production-783a.up.railway.app',
+    'resendApiKey' => 're_7SP4mPAH_Pm9Y82WfM7PHL3gwSR7UCPoP', // TODO: rotate if this was ever committed publicly
+    'resendFrom' => 'FieldCred <onboarding@fieldcred.co>', // verify domain in Resend dashboard
+    'notifyEmail' => 'dustin@fieldcred.co',
+    'billingServiceUrl' => 'https://billing-service-production-783a.up.railway.app',
 ];
