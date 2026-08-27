@@ -233,6 +233,43 @@
   </section>
 
   <section>
+    <h2 class="section-title">Guides for safety managers</h2>
+    <p style="margin:-4px 0 16px;font-size:14px;color:var(--text-secondary);">Public jobsite how-tos — OSHA card verification, fake-card checks, gate rejections, and tool comparison. These are not in-app help.</p>
+    <div class="article-list">
+      <a class="article-row" href="../guides/index.html">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        <span class="a-title">All guides for safety managers</span>
+        <span class="a-tag">Guides</span>
+      </a>
+      <a class="article-row" href="../guides/how-to-verify-an-osha-10">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4.5"/></svg></span>
+        <span class="a-title">How to verify an OSHA 10 card</span>
+        <span class="a-tag">Guides</span>
+      </a>
+      <a class="article-row" href="../guides/fake-osha-card-checklist">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/></svg></span>
+        <span class="a-title">Fake OSHA card checklist</span>
+        <span class="a-tag">Guides</span>
+      </a>
+      <a class="article-row" href="../guides/staffing-gate-rejection-playbook">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="1.5"/></svg></span>
+        <span class="a-title">Staffing gate-rejection playbook</span>
+        <span class="a-tag">Guides</span>
+      </a>
+      <a class="article-row" href="../guides/fieldcred-vs-spreadsheet-vs-mycomply">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></span>
+        <span class="a-title">FieldCred vs spreadsheet vs myComply</span>
+        <span class="a-tag">Guides</span>
+      </a>
+      <a class="article-row" href="../guides/sample-audit-csv">
+        <span class="a-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13H6z"/></svg></span>
+        <span class="a-title">Sample audit CSV</span>
+        <span class="a-tag">Guides</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
     <div class="contact-strip">
       <div>
         <div class="ct-title">Can't find what you need?</div>
@@ -254,8 +291,8 @@
 <script>
 (function(){
   var searchInput = document.getElementById('kb-search');
-  var categoryCards = Array.prototype.slice.call(document.querySelectorAll('.cat-card'));
-  var articleRows = Array.prototype.slice.call(document.querySelectorAll('.article-row'));
+  var categoryCards = Array.prototype.slice.call(document.querySelectorAll('#cat-grid .cat-card'));
+  var articleRows = Array.prototype.slice.call(document.querySelectorAll('#article-list .article-row'));
   var roleTabs = Array.prototype.slice.call(document.querySelectorAll('.role-tab'));
   var emptyState = document.getElementById('empty-state');
   var articleCount = document.getElementById('article-count');

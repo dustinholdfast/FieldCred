@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- These URLs live on the app host after this repo is deployed.
+       www.fieldcred.co is a separate deploy and will 404 /guides until that
+       host is updated or /guides is proxied. -->
+  <url>
+    <loc>https://app.fieldcred.co/guides/</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/how-to-verify-an-osha-10</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/fake-osha-card-checklist</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/staffing-gate-rejection-playbook</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/fieldcred-vs-spreadsheet-vs-mycomply</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/sample-audit-csv</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://app.fieldcred.co/guides/fieldcred-sample-audit.csv</loc>
+    <changefreq>yearly</changefreq>
+  </url>
+</urlset>

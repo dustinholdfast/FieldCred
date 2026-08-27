@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staffing gate-rejection playbook — FieldCred Guides</title>
+<meta name="description" content="A practical pre-dispatch, gate, and after-rejection workflow for staffing firms. The artifact that clears a bounce is a public QR with no login — GC platforms may still be required.">
+<link rel="canonical" href="https://app.fieldcred.co/guides/staffing-gate-rejection-playbook">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../help-center/assets/kb.css">
+<style>
+.guide-table{width:100%;border-collapse:collapse;font-size:13.5px;margin:0 0 18px;}
+.guide-table th,.guide-table td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.guide-table th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);background:var(--surface-subtle);font-weight:600;}
+.guide-table td:first-child{font-weight:600;}
+@media (max-width:640px){.guide-table td:first-child{white-space:normal;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand-mark" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/></svg>
+      FieldCred<span class="kb-tag">Guides</span>
+    </a>
+    <div class="header-links">
+      <a href="../help-center/index.html">Help Center</a>
+      <a href="https://app.fieldcred.co">Open the app ↗</a>
+      <a href="mailto:support@fieldcred.co">Contact support</a>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb">
+  <div class="wrap">
+    <a href="index.html">Guides</a><span class="sep">/</span>
+    <span class="current">Staffing gate-rejection playbook</span>
+  </div>
+</nav>
+
+<main class="wrap-narrow">
+  <div class="article-page">
+    <div class="article-role-pills"><span class="role-pill">Safety manager</span></div>
+    <h1 class="article-title">Staffing gate-rejection playbook</h1>
+    <p class="article-dek">A worker bounced at the gate is a billable hour you already spent. Fix the roster before dispatch, carry a public QR, and treat GC platforms as extra — not instead of your own file.</p>
+
+    <div class="article-body">
+      <p>Staffing desks lose the morning when a name on the dispatch sheet cannot prove OSHA 10, NFPA 70E, forklift, or confined space at the trailer. The GC is not going to wait while you call the branch. This playbook is the workflow that keeps <em>your</em> roster from bouncing — even when the job also uses SkillSignal, Breadcrumb, or myComply.</p>
+
+      <div class="callout callout-note">
+        <strong>The artifact is a public QR with no login.</strong>
+        Gate staff should open a camera, scan, and see name, photo, role, and current credential status. No FieldCred account. No worker app. Phone and email stay off that page. That is the whole point.
+      </div>
+
+      <h2>Before dispatch</h2>
+      <ol>
+        <li><strong>Get the site’s required types in writing.</strong> OSHA 10 vs 30, Construction vs General Industry, arc-flash / NFPA 70E, powered industrial truck, confined space, site orientation, union book. “OSHA card” is not a spec.</li>
+        <li><strong>Match names to files, not to memory.</strong> Every name on the dispatch has a card photo or PDF, issuer, and a recency date <em>you</em> track. OSHA Outreach student cards have no federal expiration (Maritime printed expirations ended 1 April 2019). Jobsites still require recency. Put that date on the roster.</li>
+        <li><strong>Verify the cards that matter before the van leaves.</strong> OSHA 10/30: authorized trainer (records five years) or plastic-card QR → OTI Education Center. OSHA does not run a national database. Walk through <a href="how-to-verify-an-osha-10">how to verify an OSHA 10</a> once per new card, then stamp the attestation in FieldCred.</li>
+        <li><strong>Print or phone-save the public QR.</strong> One per worker. Test-scan it from a phone that is not logged into anything. If the page needs a password, you do not have a gate artifact.</li>
+        <li><strong>Load the GC’s platform if the GC requires it.</strong> SkillSignal, Breadcrumb, myComply, and similar tools are often the GC’s system of record for <em>that project</em>. Enroll or accept sponsorship. FieldCred does not replace a mandated GC badge. It keeps your people from showing up with nothing in their own file.</li>
+      </ol>
+
+      <h2>At the gate</h2>
+      <ol>
+        <li>Worker presents the QR (badge, phone lock screen, or printed card in the book).</li>
+        <li>Guard scans. Photo should match the person. Status should lead with the worst credential — expired first — not a blanket “all good.”</li>
+        <li>If the GC also scans a Smart Badge or project app, that is a second check. Fail on either side is a fail. Do not argue the GC’s tool; fix the missing piece.</li>
+        <li>No signal: a paired FieldCred gate device can use recently synced clearance and queues the scan. A first-time worker with no cached record fails closed. Do not invent a pass.</li>
+      </ol>
+
+      <h2>After a rejection</h2>
+      <ol>
+        <li><strong>Get the reason in one sentence.</strong> Expired OSHA 30? Missing confined space? Name mismatch? GC profile not linked? “They said no” is not a reason.</li>
+        <li><strong>Do not send a second body with the same hole.</strong> Check the rest of the dispatch against that same requirement before anyone else rolls.</li>
+        <li><strong>Fix the file, then the platform.</strong> Upload the current card, set the recency date, re-run the OSHA trainer/QR check if the card was the issue, refresh the public page, <em>then</em> update myComply / SkillSignal / Breadcrumb so the GC’s view matches yours.</li>
+        <li><strong>If the card itself looks wrong,</strong> stop dispatching on it. Use the <a href="fake-osha-card-checklist">fake OSHA card checklist</a> and report fraud to <a href="mailto:outreach@dol.gov">outreach@dol.gov</a> or 847-725-7804.</li>
+        <li><strong>Send the GC the proof they asked for.</strong> Public QR for the gate; CSV for the trailer office. See the <a href="sample-audit-csv">sample audit CSV</a>.</li>
+      </ol>
+
+      <h2>Who owns which system</h2>
+      <table class="guide-table">
+        <thead>
+          <tr><th>System</th><th>Who it serves</th><th>When you still need it</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Your roster (FieldCred or equivalent)</td>
+            <td>Your branch, your safety manager, your next dispatch</td>
+            <td>Always. This is how you stop bouncing <em>your</em> people.</td>
+          </tr>
+          <tr>
+            <td>GC project platform (SkillSignal, Breadcrumb, myComply, …)</td>
+            <td>That GC, that site, that badge program</td>
+            <td>Whenever the GC mandates it. FieldCred is not a substitute, and it is not competing with SkillSignal for ENR GCs.</td>
+          </tr>
+          <tr>
+            <td>Spreadsheet on a shared drive</td>
+            <td>Whoever last opened it</td>
+            <td>Never as the gate artifact. Compare options in <a href="fieldcred-vs-spreadsheet-vs-mycomply">FieldCred vs spreadsheet vs myComply</a>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Setup for the public page and what it hides: <a href="../help-center/articles/public-record-what-it-shows.html">What a worker’s public QR page shows</a>.</p>
+
+    </div>
+
+    <div class="article-meta">
+      <span>Staffing · gate workflow</span>
+      <span>Last updated August 2026</span>
+    </div>
+  </div>
+
+  <div class="related-box">
+    <h3>More safety-manager guides</h3>
+    <div class="related-list">
+      <a href="how-to-verify-an-osha-10">How to verify an OSHA 10 card</a>
+      <a href="fake-osha-card-checklist">Fake OSHA card checklist</a>
+      <a href="fieldcred-vs-spreadsheet-vs-mycomply">FieldCred vs spreadsheet vs myComply</a>
+      <a href="sample-audit-csv">Sample audit CSV</a>
+    </div>
+  </div>
+
+  <section style="margin-top:24px;">
+    <div class="contact-strip">
+      <div>
+        <div class="ct-title">Questions about a roster or a gate bounce?</div>
+        <div class="ct-sub">Email us — a person reads it.</div>
+      </div>
+      <a class="btn" href="mailto:hello@fieldcred.co">hello@fieldcred.co</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap-narrow" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>© 2026 FieldCred</span>
+    <span class="mono">app.fieldcred.co/guides</span>
+  </div>
+</footer>
+
+</body>
+</html>
