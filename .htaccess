@@ -56,3 +56,18 @@
 <FilesMatch "^(tenants|signup-config)\.php$">
   Require all denied
 </FilesMatch>
+
+# ---- Public GTM guides (extensionless URLs) ----
+# /guides and /guides/how-to-verify-an-osha-10 serve the matching .html files.
+# CSV and other real files are left alone. This host had no prior privacy/terms
+# rewrites; keep this block scoped to guides/ so the SPA at / is untouched.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule ^guides/?$ guides/index.html [L]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{DOCUMENT_ROOT}/guides/$1.html -f
+  RewriteRule ^guides/([A-Za-z0-9_-]+)/?$ guides/$1.html [L]
+</IfModule>
