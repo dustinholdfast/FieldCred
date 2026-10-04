@@ -32,9 +32,10 @@ return [
     // Public Neon Auth and Data API URLs for project cool-flower-78830338.
     // No database password belongs in this file.
     'demo' => [
-        'name' => "FieldCred Demo",
+        'name' => 'Demo',
         'authUrl' => 'https://ep-falling-dream-b4s5gk7v.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
         'dataApiUrl' => 'https://ep-falling-dream-b4s5gk7v.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
+        'domains' => ['fieldcred.co'],
     ],
 
 ];
