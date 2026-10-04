@@ -1,5 +1,6 @@
 import { TENANTS } from './tenants.js';
 import { enforceRateLimit } from './rate-limit.js';
+import { handleFile } from './files.js';
 
 // Same caps as the PHP call sites.
 export const LIMITS = {
@@ -64,8 +65,8 @@ function limited(retryAfter) {
 function publicTenant(entry, slug) {
   return {
     name: entry.name ?? slug,
-    url: entry.url,
-    anonKey: entry.anonKey,
+    authUrl: entry.authUrl,
+    dataApiUrl: entry.dataApiUrl,
   };
 }
 
@@ -148,7 +149,7 @@ function signupHtml({ companyName, adminEmail, domain, note }) {
     + '<tr><td style="padding:6px 0;color:#5b6472;">Domain</td><td style="padding:6px 0;font-weight:600;">' + (domain !== '' ? escapeHtml(domain) : '<em>not given</em>') + '</td></tr>'
     + '</table>'
     + (note !== '' ? '<p style="color:#5b6472;"><strong>Note:</strong><br>' + nl2br(escapeHtml(note)) + '</p>' : '')
-    + '<p style="margin-top:20px;font-size:11px;color:#8a919e;">Provision this in Supabase, then add an entry to tenants.php — see supabase/PROVISIONING.md.</p>'
+    + '<p style="margin-top:20px;font-size:11px;color:#8a919e;">Provision this in Neon, then add an entry to tenants.php — see neon/README.md.</p>'
     + '</div>';
 }
 
@@ -249,6 +250,10 @@ export async function handleRequest(request, env = {}, deps = {}) {
   if (path === '/tenant-lookup.php') return handleTenantLookup(request, now, tenants);
   if (path === '/tenant-lookup-by-domain.php') return handleTenantLookupByDomain(request, now, tenants);
   if (path === '/signup-notify.php') return handleSignup(request, env, fetchImpl, now);
+  if (path === '/file.php') {
+    const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
+    return handleFile(request, tenants, fetchImpl, nowMs);
+  }
 
   if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {
     return json(404, { error: 'Not found' });

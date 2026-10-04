@@ -6,12 +6,13 @@
 
 <!-- Content Security Policy. Declared here (not only in .htaccess) so it travels
      with the app regardless of host and can be verified locally. script-src is
-     'self' plus 'wasm-unsafe-eval' — everything is self-hosted (Supabase and the
-     Tesseract OCR engine under js/vendor/, no CDN). 'wasm-unsafe-eval' is the
+     'self' plus 'wasm-unsafe-eval' — everything is self-hosted (the Neon client
+     and the Tesseract OCR engine under js/vendor/, no CDN). 'wasm-unsafe-eval' is the
      minimal directive that lets the client-side OCR (Tesseract.js) instantiate
      WebAssembly; it permits wasm compilation only, NOT arbitrary eval()/Function,
-     so it is far narrower than 'unsafe-eval'. worker-src allows blob: for
-     Supabase auth's token-refresh worker and the Tesseract worker.
+     so it is far narrower than 'unsafe-eval'. worker-src allows blob: for the
+     Tesseract worker. connect-src allows Neon Auth and the Data API. A host
+     source of *.aws.neon.tech matches the nested endpoint hostnames.
      media-src allows blob: for the gate scanner's live camera preview
      (js/pages/scan.js); the camera itself is additionally gated by the
      Permissions-Policy header in .htaccess.
@@ -21,7 +22,7 @@
      session. It must match BILLING_SERVICE_URL in js/lib/config.js AND the
      CORS allowlist in billing-service/server.mjs; miss any one of the three
      and the browser refuses the request with no visible error. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://billing-service-production-783a.up.railway.app; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.aws.neon.tech wss://*.aws.neon.tech https://*.neon.tech wss://*.neon.tech https://billing-service-production-783a.up.railway.app; base-uri 'self'; form-action 'self'; object-src 'none'">
 
 <title>FieldCred — Workforce Credential Platform</title>
 <meta name="description" content="FieldCred is a live credential system for every field worker — QR verification at the gate, expiration tracking, and audit-ready reporting.">
@@ -59,11 +60,11 @@
 <link rel="stylesheet" href="./css/styles.css">
 
 <!-- Warm up the critical module graph in parallel instead of discovering each
-     import one network hop at a time. supabase-js.js is the heaviest (~216 KB),
+     import one network hop at a time. neon-js.js is the heaviest module,
      so preloading it up front removes it from the router's critical path. -->
 <link rel="modulepreload" href="./js/main.js">
-<link rel="modulepreload" href="./js/vendor/supabase-js.js">
-<link rel="modulepreload" href="./js/lib/supabaseClient.js">
+<link rel="modulepreload" href="./js/vendor/neon-js.js">
+<link rel="modulepreload" href="./js/lib/backendClient.js">
 <link rel="modulepreload" href="./js/lib/router.js">
 <link rel="modulepreload" href="./js/lib/state.js">
 <link rel="modulepreload" href="./js/pages/login.js">

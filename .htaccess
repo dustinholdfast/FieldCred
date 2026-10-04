@@ -23,9 +23,8 @@
 
 # Serve ES modules with a JavaScript MIME type. Many servers send .mjs as
 # application/octet-stream by default; combined with the nosniff header above,
-# the browser then refuses to execute it and the whole app fails to boot. The
-# vendored Supabase bundle (js/vendor/supabase-js.js) imports .mjs node shims,
-# so this is required, not optional.
+# the browser then refuses to execute it and the whole app fails to boot.
+# js/vendor/jsqr.mjs is loaded that way, so this is required, not optional.
 <IfModule mod_mime.c>
   AddType text/javascript .mjs
   # Same story for the web app manifest: served as octet-stream by default on

@@ -1,12 +1,6 @@
-// Invokes the existing, battle-tested supabase/provision-tenant.mjs as a
-// child process rather than re-implementing its logic here. Deliberate
-// choice: that script already handles pooler-readiness retries, resume-
-// after-partial-failure, and the exact ordering Supabase's API needs —
-// duplicating that in a second codepath would be a correctness risk for
-// no real benefit. This module's job is just: build the manifest file,
-// run the script, parse its stdout for the two things it prints that nothing
-// else can recover (the tenants.php entry, the DB connection string), and
-// record what happened.
+// Invokes neon/provision-tenant.mjs as a child process. That script creates
+// an empty Neon project. It does not copy Supabase data. Auth URL and Data
+// API URL are only real once those features are enabled — see neon/README.md.
 
 import { execFile } from 'node:child_process';
 import { writeFile, mkdtemp, rm } from 'node:fs/promises';
@@ -16,12 +10,12 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-// Path to the supabase/ tooling folder, relative to wherever this service
+// Path to the neon/ tooling folder, relative to wherever this service
 // is deployed. Defaults to a sibling directory, matching this repo's
-// layout (billing-service/ and supabase/ side by side) — override via
-// SUPABASE_TOOLING_PATH if this service is deployed with a different
+// layout (billing-service/ and neon/ side by side) — override via
+// NEON_TOOLING_PATH if this service is deployed with a different
 // checkout structure.
-const TOOLING_PATH = process.env.SUPABASE_TOOLING_PATH || join(process.cwd(), '..', 'supabase');
+const TOOLING_PATH = process.env.NEON_TOOLING_PATH || join(process.cwd(), '..', 'neon');
 
 // Provisioning legitimately takes minutes (pooler-readiness retry alone can
 // take ~320s worst case per provision-tenant.mjs's own comment) — timeout
@@ -49,7 +43,7 @@ export async function runProvisioning(manifest) {
       'node',
       [join(TOOLING_PATH, 'provision-tenant.mjs'), manifestPath],
       {
-        env: process.env, // SUPABASE_ACCESS_TOKEN must already be set for this process
+        env: process.env, // NEON_API_KEY must already be set for this process
         timeout: PROVISION_TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024,
       }

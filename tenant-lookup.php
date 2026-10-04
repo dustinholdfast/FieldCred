@@ -1,5 +1,5 @@
 <?php
-// Returns { name, url, anonKey } for a given ?tenant=slug, looked up from
+// Returns { name, authUrl, dataApiUrl } for a given ?tenant=slug, looked up from
 // tenants.php. Never returns the full registry — only the one tenant
 // that was asked for, and only if the slug matches a known entry. Response
 // fields are an explicit whitelist (not the raw stored record) so a future
@@ -35,6 +35,6 @@ if (!isset($tenants[$slug])) {
 $entry = $tenants[$slug];
 echo json_encode([
     'name' => $entry['name'] ?? $slug,
-    'url' => $entry['url'],
-    'anonKey' => $entry['anonKey'],
+    'authUrl' => $entry['authUrl'] ?? '',
+    'dataApiUrl' => $entry['dataApiUrl'] ?? '',
 ]);

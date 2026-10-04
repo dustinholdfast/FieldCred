@@ -7,7 +7,7 @@ import { openShareDialog } from '../components/shareDialog.js';
 import { openImportDialog } from '../components/importDialog.js';
 import { printBadgeCards } from '../lib/badgeCards.js';
 import { isCompliant, workerNeedsRenewal, summarizeCertStatuses } from '../lib/status.js';
-import { tenantName } from '../lib/supabaseClient.js';
+import { tenantName } from '../lib/backendClient.js';
 import { currentRole } from '../lib/auth.js';
 import { roleCan } from '../lib/roles.js';
 
