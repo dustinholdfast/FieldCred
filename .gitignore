@@ -31,3 +31,4 @@ node_modules/
 # locally and in `wrangler secret put` for deploy — never in git.
 .wrangler/
 .dev.vars
+dist/

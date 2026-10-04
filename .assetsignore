@@ -1,6 +1,9 @@
 # Public site is the app docroot. Everything below stays out of the asset
 # upload so it cannot be fetched from the Worker.
 
+# Staged by scripts/stage-assets.mjs. Not a source directory.
+/dist/
+
 # Worker source and deploy config
 /worker/
 /wrangler.jsonc

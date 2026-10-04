@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { handleRequest, findTenantByDomainIn, LIMITS } from '../worker/endpoints.js';
+import { collectAssetPaths } from '../scripts/stage-assets.mjs';
 import { resetRateLimits } from '../worker/rate-limit.js';
 import { TENANTS } from '../worker/tenants.js';
 
@@ -64,9 +65,11 @@ test('wrangler config is the fieldcred Worker with no custom domain', () => {
   assert.equal(json.main, 'worker/index.js');
   assert.equal(json.workers_dev, true);
   assert.equal(json.assets.binding, 'ASSETS');
-  assert.equal(json.assets.directory, '.');
+  assert.equal(json.assets.directory, './dist');
+  assert.equal(json.build.command, 'node scripts/stage-assets.mjs');
   assert.equal(json.route, undefined);
   assert.equal(json.routes, undefined);
+  assert.ok(json.assets.run_worker_first.includes('/'));
   assert.ok(json.assets.run_worker_first.includes('/tenant-lookup.php'));
   assert.ok(json.assets.run_worker_first.includes('/tenant-lookup-by-domain.php'));
   assert.ok(json.assets.run_worker_first.includes('/signup-notify.php'));
@@ -74,8 +77,31 @@ test('wrangler config is the fieldcred Worker with no custom domain', () => {
   assert.equal(/re_[A-Za-z0-9]{10,}/.test(raw), false);
 
   const ignore = readFileSync(new URL('../.assetsignore', import.meta.url), 'utf8');
-  for (const line of ['*.php', '/billing-service/', '/supabase/', '/worker/', '/Marketing/']) {
+  for (const line of ['*.php', '/billing-service/', '/supabase/', '/worker/', '/Marketing/', '/dist/']) {
     assert.ok(ignore.includes(line), line);
+  }
+});
+
+test('staged assets are the public app and not the PHP sources', async () => {
+  const files = await collectAssetPaths();
+  for (const required of [
+    'index.html',
+    'sw.js',
+    'js/main.js',
+    'js/vendor/jsqr.mjs',
+    'manifest.webmanifest',
+    '.well-known/assetlinks.json',
+    '_headers',
+    'js/vendor/tesseract/eng.traineddata.gz',
+  ]) {
+    assert.ok(files.includes(required), required);
+  }
+  for (const blocked of files) {
+    assert.equal(blocked.endsWith('.php'), false, blocked);
+    assert.equal(blocked.startsWith('billing-service/'), false, blocked);
+    assert.equal(blocked.startsWith('supabase/'), false, blocked);
+    assert.equal(blocked.startsWith('worker/'), false, blocked);
+    assert.equal(blocked.includes('node_modules'), false, blocked);
   }
 });
 
@@ -305,4 +331,12 @@ test('private PHP files are not served, and unknown paths fall through to assets
   const shell = await handleRequest(req('/index.html'), env);
   assert.equal(shell.status, 404);
   assert.equal(forwarded, `${ORIGIN}/index.html`);
+
+  const root = await handleRequest(req('/'), env);
+  assert.equal(root.status, 404);
+  assert.equal(forwarded, `${ORIGIN}/index.html`);
+
+  const guides = await handleRequest(req('/guides/'), env);
+  assert.equal(guides.status, 404);
+  assert.equal(forwarded, `${ORIGIN}/guides/index.html`);
 });

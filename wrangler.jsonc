@@ -8,11 +8,35 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-10-04",
   "workers_dev": true,
+  "build": {
+    "command": "node scripts/stage-assets.mjs",
+    "watch_dir": [
+      "js",
+      "css",
+      "assets",
+      "help-center",
+      "guides",
+      ".well-known",
+      "index.html",
+      "landing.html",
+      "knowledge-base.html",
+      "sitemap.xml",
+      "sw.js",
+      "manifest.webmanifest",
+      "_headers",
+      ".assetsignore"
+    ]
+  },
   "assets": {
-    "directory": ".",
+    "directory": "./dist",
     "binding": "ASSETS",
-    "html_handling": "auto-trailing-slash",
+    "html_handling": "none",
     "run_worker_first": [
+      "/",
+      "/help-center",
+      "/help-center/",
+      "/guides",
+      "/guides/",
       "/tenant-lookup.php",
       "/tenant-lookup-by-domain.php",
       "/signup-notify.php",

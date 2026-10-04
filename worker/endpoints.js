@@ -16,6 +16,18 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
 };
 
+// html_handling is "none", so /index.html is the file itself (200). Directory
+// requests have no file at that path. Map them onto the index document the
+// way Apache DirectoryIndex does, including both / and /index.html as 200s —
+// sw.js precaches those as two different cache keys.
+const DIRECTORY_INDEX = {
+  '/': '/index.html',
+  '/help-center': '/help-center/index.html',
+  '/help-center/': '/help-center/index.html',
+  '/guides': '/guides/index.html',
+  '/guides/': '/guides/index.html',
+};
+
 // Direct requests for these files are refused. On Apache, .htaccess denies
 // tenants.php and signup-config.php; rate-limit.php is only a PHP include.
 // None of them are fetched by the browser. Refusing them here also keeps
@@ -240,6 +252,10 @@ export async function handleRequest(request, env = {}, deps = {}) {
 
   if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {
     return json(404, { error: 'Not found' });
+  }
+  const indexPath = DIRECTORY_INDEX[path];
+  if (indexPath) {
+    return env.ASSETS.fetch(new Request(new URL(indexPath, request.url), request));
   }
   return env.ASSETS.fetch(request);
 }
