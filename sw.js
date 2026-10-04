@@ -1,7 +1,7 @@
 // App-shell offline support (roadmap "Platform" phase — offline/cached gate
 // scan mode). Deliberately narrow scope: only caches same-origin GET
 // requests — the app's own JS/CSS/HTML/assets — so it never touches
-// Supabase API calls (cross-origin `*.supabase.co`, and non-GET entirely).
+// Neon Auth and Data API calls (cross-origin `*.aws.neon.tech`, and non-GET entirely).
 // Those are handled at the app level instead (js/lib/offlineCache.js),
 // which can express "this data is possibly stale, cached at 3:04pm" —
 // something a raw HTTP cache can't. This file solves a different, narrower
@@ -14,7 +14,7 @@
 // reason, see .htaccess); only serve from the cache when the network fetch
 // actually fails.
 
-const CACHE_NAME = 'fieldcred-shell-v4';
+const CACHE_NAME = 'fieldcred-shell-v5';
 
 // Precached at install so a gate device that is rebooted with no signal can
 // still boot the app, rather than depending on having happened to load every
@@ -42,7 +42,7 @@ const PRECACHE_URLS = [
   './js/lib/gateVerdict.js',
   './js/lib/gateSession.js',
   './js/vendor/jsqr.mjs',
-  './js/vendor/supabase-js.js',
+  './js/vendor/neon-js.js',
   './assets/icon.svg',
 ];
 

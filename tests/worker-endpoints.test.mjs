@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { handleRequest, findTenantByDomainIn, LIMITS } from '../worker/endpoints.js';
 import { collectAssetPaths } from '../scripts/stage-assets.mjs';
 import { resetRateLimits } from '../worker/rate-limit.js';
+import { resetFileCache } from '../worker/files.js';
 import { TENANTS } from '../worker/tenants.js';
 
 const ORIGIN = 'https://fieldcred.example.workers.dev';
@@ -24,7 +25,7 @@ async function readJson(response) {
   return { status: response.status, headers: response.headers, body: await response.json() };
 }
 
-test('worker registry matches tenants.php and stays anon-only', () => {
+test('worker registry matches tenants.php and publishes Neon URLs only', () => {
   const source = readFileSync(new URL('../tenants.php', import.meta.url), 'utf8');
   const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\n)\s*\/\/[^\n]*/g, '$1');
   const entries = [];
@@ -47,14 +48,19 @@ test('worker registry matches tenants.php and stays anon-only', () => {
     entries.push({
       slug,
       name: field('name') ?? slug,
-      url: field('url'),
-      anonKey: field('anonKey'),
+      authUrl: field('authUrl'),
+      dataApiUrl: field('dataApiUrl'),
       domains,
     });
   }
 
   assert.deepEqual(TENANTS, entries);
-  assert.equal(TENANTS.some((entry) => /service_role|sb_secret_/i.test(entry.anonKey)), false);
+  for (const entry of TENANTS) {
+    assert.equal(entry.authUrl.includes('supabase.co'), false);
+    assert.equal(entry.dataApiUrl.includes('supabase.co'), false);
+    assert.equal(entry.authUrl.startsWith('https://'), true);
+    assert.equal(entry.dataApiUrl.endsWith('/rest/v1'), true);
+  }
 });
 
 test('wrangler config is the fieldcred Worker with no custom domain', () => {
@@ -77,9 +83,10 @@ test('wrangler config is the fieldcred Worker with no custom domain', () => {
   assert.equal(/re_[A-Za-z0-9]{10,}/.test(raw), false);
 
   const ignore = readFileSync(new URL('../.assetsignore', import.meta.url), 'utf8');
-  for (const line of ['*.php', '/billing-service/', '/supabase/', '/worker/', '/Marketing/', '/dist/']) {
+  for (const line of ['*.php', '/billing-service/', '/neon/', '/supabase/', '/worker/', '/Marketing/', '/dist/']) {
     assert.ok(ignore.includes(line), line);
   }
+  assert.ok(json.assets.run_worker_first.includes('/file.php'));
 });
 
 test('staged assets are the public app and not the PHP sources', async () => {
@@ -89,6 +96,8 @@ test('staged assets are the public app and not the PHP sources', async () => {
     'sw.js',
     'js/main.js',
     'js/vendor/jsqr.mjs',
+    'js/vendor/neon-js.js',
+    'js/lib/backendClient.js',
     'manifest.webmanifest',
     '.well-known/assetlinks.json',
     '_headers',
@@ -100,6 +109,8 @@ test('staged assets are the public app and not the PHP sources', async () => {
     assert.equal(blocked.endsWith('.php'), false, blocked);
     assert.equal(blocked.startsWith('billing-service/'), false, blocked);
     assert.equal(blocked.startsWith('supabase/'), false, blocked);
+    assert.equal(blocked.startsWith('neon/'), false, blocked);
+    assert.equal(blocked.endsWith('supabase-js.js'), false, blocked);
     assert.equal(blocked.startsWith('worker/'), false, blocked);
     assert.equal(blocked.includes('node_modules'), false, blocked);
   }
@@ -113,9 +124,12 @@ test('tenant lookup returns the demo registry entry', async () => {
   assert.equal(res.headers.get('content-type'), 'application/json');
   assert.deepEqual(res.body, {
     name: 'FieldCred Demo',
-    url: 'https://kaktjqbbijyjejulbpgy.supabase.co',
-    anonKey: TENANTS[0].anonKey,
+    authUrl: 'https://ep-falling-dream-b4s5gk7v.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+    dataApiUrl: 'https://ep-falling-dream-b4s5gk7v.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
   });
+  assert.equal(JSON.stringify(res.body).includes('supabase.co'), false);
+  assert.equal('url' in res.body, false);
+  assert.equal('anonKey' in res.body, false);
   assert.equal('domains' in res.body, false);
 });
 
@@ -150,8 +164,8 @@ test('domain lookup validates email and returns one tenant', async () => {
   const tenants = [{
     slug: 'acme',
     name: 'Acme Corp',
-    url: 'https://example.supabase.co',
-    anonKey: 'sb_publishable_test',
+    authUrl: 'https://ep-example.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+    dataApiUrl: 'https://ep-example.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
     domains: ['acmecorp.com'],
   }];
   const bad = await readJson(await handleRequest(req('/tenant-lookup-by-domain.php?email=not-an-email', { ip: '203.0.113.23' }), {}, { tenants }));
@@ -171,8 +185,8 @@ test('domain lookup validates email and returns one tenant', async () => {
   assert.deepEqual(hit.body, {
     slug: 'acme',
     name: 'Acme Corp',
-    url: 'https://example.supabase.co',
-    anonKey: 'sb_publishable_test',
+    authUrl: 'https://ep-example.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+    dataApiUrl: 'https://ep-example.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
   });
   assert.equal(findTenantByDomainIn(TENANTS, 'acmecorp.com'), null);
 });
@@ -324,9 +338,9 @@ test('private PHP files are not served, and unknown paths fall through to assets
       },
     },
   };
-  const missing = await handleRequest(req('/file.php'), env);
+  const missing = await handleRequest(req('/not-a-real-page.txt'), env);
   assert.equal(missing.status, 404);
-  assert.equal(forwarded, `${ORIGIN}/file.php`);
+  assert.equal(forwarded, `${ORIGIN}/not-a-real-page.txt`);
 
   const shell = await handleRequest(req('/index.html'), env);
   assert.equal(shell.status, 404);
@@ -339,4 +353,67 @@ test('private PHP files are not served, and unknown paths fall through to assets
   const guides = await handleRequest(req('/guides/'), env);
   assert.equal(guides.status, 404);
   assert.equal(forwarded, `${ORIGIN}/guides/index.html`);
+});
+
+test('boot files do not send the browser to supabase.co', () => {
+  const files = [
+    'index.html',
+    'sw.js',
+    'js/lib/config.js',
+    'js/lib/backendClient.js',
+    'js/main.js',
+    'worker/tenants.js',
+    'tenants.php',
+  ];
+  for (const file of files) {
+    const text = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.equal(text.includes('supabase.co'), false, file);
+  }
+});
+
+test('file.php streams a public photo through the Data API and not Postgres', async () => {
+  resetFileCache();
+  const calls = [];
+  const png = btoa('png-bytes');
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init });
+    if (String(url).endsWith('/token/anonymous')) {
+      return Response.json({ token: 'anon-token', expires_at: '2099-01-01T00:00:00Z' });
+    }
+    return Response.json([{ content_type: 'image/png', data: png }]);
+  };
+  const res = await handleRequest(req('/file.php?tenant=demo&bucket=photos&path=abc.png'), {}, {
+    fetchImpl,
+    nowMs: () => 1_000,
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/png');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+  const body = new Uint8Array(await res.arrayBuffer());
+  assert.equal(new TextDecoder().decode(body), 'png-bytes');
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, `${TENANTS[0].authUrl}/token/anonymous`);
+  assert.equal(calls[1].url, `${TENANTS[0].dataApiUrl}/rpc/get_public_file`);
+  assert.equal(calls[1].init.headers.Authorization, 'Bearer anon-token');
+  assert.equal(JSON.stringify(calls).includes('supabase.co'), false);
+  assert.equal(calls.some((call) => String(call.url).includes('postgres')), false);
+});
+
+test('file.php refuses a private bucket and a bad grant, and 404s an empty file', async () => {
+  resetFileCache();
+  const fetchImpl = async (url) => {
+    if (String(url).endsWith('/token/anonymous')) return Response.json({ token: 'anon-token' });
+    return Response.json([]);
+  };
+  const cert = await handleRequest(req('/file.php?tenant=demo&bucket=certificates&path=secret.pdf'), {}, { fetchImpl, nowMs: () => 2_000 });
+  assert.equal(cert.status, 404);
+
+  const badToken = await handleRequest(req('/file.php?tenant=demo&token=short'), {}, { fetchImpl, nowMs: () => 2_000 });
+  assert.equal(badToken.status, 400);
+
+  const missing = await handleRequest(req('/file.php?tenant=demo&bucket=photos&path=missing.png'), {}, { fetchImpl, nowMs: () => 2_000 });
+  assert.equal(missing.status, 404);
+
+  const unknown = await handleRequest(req('/file.php?tenant=nope&bucket=photos&path=a.png'), {}, { fetchImpl, nowMs: () => 2_000 });
+  assert.equal(unknown.status, 404);
 });

@@ -1,6 +1,6 @@
 <?php
 // Resolves a tenant from an email's domain — ?email=jane@acmecorp.com
-// returns { slug, name, url, anonKey } for whichever tenant in
+// returns { slug, name, authUrl, dataApiUrl } for whichever tenant in
 // tenants.php lists "acmecorp.com" in its domains array, or 404 if no
 // tenant claims that domain. Used by the login page so a client can type
 // their work email instead of needing to know a Company ID slug.
@@ -43,8 +43,8 @@ foreach ($tenants as $slug => $entry) {
         echo json_encode([
             'slug' => $slug,
             'name' => $entry['name'] ?? $slug,
-            'url' => $entry['url'],
-            'anonKey' => $entry['anonKey'],
+            'authUrl' => $entry['authUrl'] ?? '',
+            'dataApiUrl' => $entry['dataApiUrl'] ?? '',
         ]);
         exit;
     }

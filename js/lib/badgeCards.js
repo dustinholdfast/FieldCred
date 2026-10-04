@@ -9,7 +9,7 @@
 
 import { escapeHtml } from './format.js';
 import { showToast } from '../components/toast.js';
-import { tenantSlug } from './supabaseClient.js';
+import { tenantSlug } from './backendClient.js';
 import { workerRecordUrl } from './publicLinks.js';
 import { qrDataUrl } from './qrImage.js';
 

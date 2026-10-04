@@ -7,7 +7,7 @@ import { openAuditPackDialog } from '../components/auditPackDialog.js';
 import { openGateQrDialog } from '../components/gateQrDialog.js';
 import { avatarHtml } from '../components/avatar.js';
 import { gateLinkUrl } from '../lib/publicLinks.js';
-import { tenantSlug } from '../lib/supabaseClient.js';
+import { tenantSlug } from '../lib/backendClient.js';
 import { icons } from '../lib/icons.js';
 import { evaluateClearance } from '../lib/clearance.js';
 import { buildAuditPackHtml } from '../lib/auditPack.js';

@@ -18,82 +18,62 @@ layer) so porting to React later is mostly a mechanical translation of
 `js/pages/*.js` and `js/components/*.js` into components, with `js/lib/state.js`
 becoming a data-fetching hook.
 
-Backend: [Supabase](https://supabase.com) — Postgres + Storage + Auth, called
-directly from the browser via `@supabase/supabase-js` (loaded from a CDN, no
-build step needed either).
+Backend: [Neon](https://neon.com) Postgres, Neon Auth, and the Neon Data API.
+The browser talks to those public HTTPS endpoints through a vendored
+`@neondatabase/neon-js` build (`js/vendor/neon-js.js`). It never receives a
+database password. Files live in Postgres (`public.files`) and are streamed
+by the Worker route `file.php`.
 
-**Multi-tenant**: each tenant gets its own, fully separate Supabase project
-(own database, own Storage, own users) — not a shared database filtered by a
-tenant column. The frontend resolves which tenant it's serving, looks up
-that tenant's project credentials from a small server-side registry, and
-only then connects. See `supabase/PROVISIONING.md` for the full checklist to
-add a tenant, and `js/lib/tenant.js` / `js/lib/supabaseClient.js` for how
-resolution + connection works.
+**Multi-tenant**: each tenant gets its own Neon project (own database, own
+users) — not a shared database filtered by a tenant column. The frontend
+resolves which tenant it's serving, looks up that tenant's public Auth URL
+and Data API URL from a small server-side registry, and only then connects.
+See `neon/README.md` for the checklist, and `js/lib/tenant.js` /
+`js/lib/backendClient.js` for how resolution + connection works.
 
 ## Backend setup (single tenant / local dev)
 
-The steps below get one tenant ("default") working — enough for local
-development or a single-customer deployment. For additional tenants, see
-`supabase/PROVISIONING.md` instead.
-
-1. Create a free project at [supabase.com](https://supabase.com).
-2. In **Authentication → Providers → Email**, turn off "Confirm email" (or set
-   up email delivery) so sign-in works without a confirmation step.
-3. In **Authentication → Users**, add yourself as a user — this app has no
-   sign-up flow, admins are provisioned directly in the Supabase dashboard.
-4. In **SQL Editor**, run `supabase/schema.sql` — creates the `workers` table,
-   the `public_workers` view, RLS policies, and the `photos`/`badges`/
-   `certificates` Storage buckets and their policies. Optionally also run
-   `supabase/seed_demo.sql` to get 8 demo workers.
-5. In **Project Settings → API**, copy the **Project URL** and **anon public**
-   key into **both**:
-   - `js/lib/config.js` (the fallback used if the tenant registry below is
-     unreachable), and
-   - `tenants.php`, under the `'default'` key (the registry entry actually
-     used in normal operation).
-6. Reload the app and sign in.
+Follow `neon/README.md`. Short version: create a Neon project, enable Auth
+and the Data API, apply `neon/schema.sql`, create an admin and a
+`staff_roles` row, then put the two public URLs in `tenants.php` (or
+`js/lib/config.js` for a PHP-less fallback). Env var names are listed in
+that doc. Do not commit the values.
 
 ## Running it
 
-The tenant registry (`tenant-lookup.php`) needs a **PHP-capable** static
-host — that's what `js/lib/supabaseClient.js` fetches from to find each
-tenant's Supabase project. Locally:
+The deployed app is a Cloudflare Worker named `fieldcred` (`workers.dev`
+only — no custom domain). `js/lib/backendClient.js` fetches
+`tenant-lookup.php`, and the Worker returns that tenant's Neon Auth URL and
+Data API URL. Workers do not run PHP. Locally:
 
 ```
-php -S 127.0.0.1:8844 -t .
+npx wrangler dev
 ```
 
-(`npx serve .` or similar won't execute `tenant-lookup.php` — the app will
-still boot in that case, just always falling back to the single project in
-`js/lib/config.js`, which is fine for quick single-tenant testing.)
-
-Then open `http://localhost:8844/`. Routing is hash-based (`#/directory`,
-`#/worker/:id`, …) so it needs no server rewrite rules.
+Routing is hash-based (`#/directory`, `#/worker/:id`, …).
 
 ## Structure
 
-- `tenants.php` — the tenant registry: maps a tenant slug to its Supabase
-  project URL + anon key. Add one entry per tenant (see
-  `supabase/PROVISIONING.md`). Never fetched directly by the browser —
-  only read server-side via `require`.
+- `tenants.php` — the tenant registry: maps a tenant slug to its Neon Auth
+  URL and Data API URL. Add one entry per tenant (see `neon/README.md`).
+  Never fetched directly by the browser — only read server-side via `require`.
 - `tenant-lookup.php` — the only thing the frontend actually calls
   (`?tenant=slug`); looks up one entry in `tenants.php` and returns just
-  that tenant's `{ url, anonKey }`, never the whole registry.
+  that tenant's `{ name, authUrl, dataApiUrl }`, never the whole registry.
 - `js/lib/tenant.js` — resolves which tenant the current page load is for:
   `?tenant=` query param → subdomain → `localStorage` override → `'default'`.
-- `js/lib/config.js` — fallback Supabase Project URL + anon key, used only
-  if `tenant-lookup.php` is unreachable (e.g. local dev without PHP
-  running). The anon key is safe to ship client-side either way — it only
-  grants what the RLS policies in `supabase/schema.sql` allow.
-- `js/lib/supabaseClient.js` — `initSupabase()` resolves the tenant, fetches
-  its credentials from the registry (or falls back to `config.js`), and
-  creates the Supabase client; `main.js` awaits this before starting the
-  router. Exports live bindings (`supabase`, `isConfigured`, `tenantSlug`)
-  that other modules read lazily, after init has run.
+- `js/lib/config.js` — fallback Auth URL and Data API URL, used only if
+  `tenant-lookup.php` is unreachable (e.g. local dev without PHP running).
+  Both are public. Row-level security is what limits them.
+- `js/lib/backendClient.js` — `initBackend()` resolves the tenant, fetches
+  its URLs from the registry (or falls back to `config.js`), and creates
+  the Neon client; `main.js` awaits this before starting the router.
+  Exports live bindings (`db`, `isConfigured`, `tenantSlug`) that other
+  modules read lazily, after init has run.
 - `js/lib/auth.js` — sign in/out, session, auth state changes.
 - `js/lib/state.js` — async data access (`getAll`, `getById`, `getBySlug`,
   `createWorker`, `updateWorker`, `deleteWorker`, `setPublicView`,
-  `uploadImage`) backed by Supabase. Certifications and skills are stored as
+  `uploadImage`) backed by the Neon Data API. Certifications and skills are stored as
   `jsonb` on the `workers` row rather than a separate table — matches the
   app's existing data shape and avoids a join for what's a small embedded
   list per worker.
@@ -126,21 +106,19 @@ Then open `http://localhost:8844/`. Routing is hash-based (`#/directory`,
 - `js/lib/gateSession.js` — per-device gate state: which site the tablet is
   paired to, guard vs. supervisor mode, and the supervisor re-entry PIN. Read
   the header comment before touching the PIN: it is a convenience lock, not a
-  security boundary, and the real gate is the Supabase session behind it.
-- `supabase/schema.sql` — per-tenant backend setup: tables, RLS policies,
-  storage buckets + policies. Run once per tenant project. Safe to re-run.
-- `supabase/seed_demo.sql` — optional demo data (8 sample workers); run
-  separately, only for local dev or a demo tenant — not real tenants.
-- `supabase/PROVISIONING.md` — step-by-step checklist for adding a new
-  tenant (new Supabase project, schema, admin user, registry entry).
-- `supabase/MIGRATIONS_README.md` — how per-tenant SQL migrations work, a
-  log of what's shipped, and the walkthrough for applying/verifying the
-  current one.
+  security boundary, and the real gate is the Neon Auth session behind it.
+- `neon/schema.sql` — per-tenant backend setup: tables, RLS policies, and
+  file storage in Postgres. Run once per tenant database after Auth and the
+  Data API are enabled.
+- `neon/README.md` — how to point a tenant at Neon and how to confirm
+  reads and writes.
+- `supabase/` — historical schema and the old provisioner. New tenants do
+  not use it.
 
 ## Auth model
 
 The entire staff-facing app (directory, profiles, admin, edit) requires a
-signed-in Supabase session — those pages show phone/email and compliance
+signed-in Neon Auth session — those pages show phone/email and compliance
 data that the public share page deliberately hides, so leaving them open
 would undercut that. Only the gate-device routes skip the auth check — a gate
 is a shared kiosk that nobody signs in to:
@@ -173,7 +151,7 @@ rather than the tablet. `#/scan` and `#/r/:slug` are unchanged and still
 work; all three share `js/lib/gateVerdict.js`.
 
 **Modes.** Guard mode is unauthenticated on purpose — nobody signs in to a
-shared kiosk. Leaving gate mode requires a real Supabase sign-in (it hands
+shared kiosk. Leaving gate mode requires a real Neon Auth sign-in (it hands
 off to `#/login` and returns via `?sup=1`); that signed-in supervisor then
 sets a 4-digit device PIN so later unlocks are fast. The PIN is convenience
 only: every supervisor screen reads `gate_scans`, which RLS grants to
@@ -188,26 +166,22 @@ paired. Scanning a site QR *inside* the app re-pairs it.
 queue their audit rows for `js/lib/offlineSync.js` to drain. Nothing cached
 and no signal fails closed — it never renders a verdict it can't stand behind.
 
-Requires `supabase/migrations/011_gate_companion.sql`.
+Requires the gate functions in `neon/schema.sql`.
 
-There's no self-serve sign-up flow — users are provisioned by adding them
-directly in the Supabase dashboard. Each user has one of three roles, stored
-in Supabase auth `app_metadata` under `fc_role` and enforced server-side by
-RLS (`supabase/migrations/010_roles.sql`; the frontend mirror is
-`js/lib/roles.js`, which only hides controls — the database is the real
-boundary):
+There's no self-serve sign-up flow — create the user in Neon Auth, then
+insert a row in `public.staff_roles`. Each user has one of three roles,
+enforced server-side by RLS. `js/lib/roles.js` only hides controls.
 
-- **admin** — everything (the default: a user with no `fc_role` is treated as
-  admin, so existing single-admin setups are unchanged).
+- **admin** — everything.
 - **safety** — read everything; create/edit workers and certs; view scan
   logs. Cannot delete workers, change tenant settings, or manage
-  sites/credential types/users.
+  sites/credential types.
 - **gate** — read-only directory + scan log (for a signed-in gate device).
 
-Roles are assigned from the Supabase dashboard (Auth → user → app_metadata:
-`{"fc_role":"safety"}`), not from the app — see `supabase/PROVISIONING.md`.
-A role change reaches the client only after the user's JWT refreshes (~1h) or
-they re-login.
+A user with no `staff_roles` row is `unassigned` in the database and cannot
+read staff tables. The UI still treats a missing client claim as admin; the
+database does not. After sign-in the client stamps `current_fc_role()` onto
+the session so the two agree. See `neon/README.md`.
 
 ## Android app
 
@@ -235,12 +209,12 @@ build tooling and must **not** be deployed to the web host.
 - QR codes are real, generated client-side from each worker's public record
   URL (`js/vendor/qrcode.min.js`), not the decorative placeholder from the
   prototype.
-- Photos, certification badge images, and certificate PDFs upload to
-  Supabase Storage (`photos` / `badges` / `certificates` buckets, all
-  public-read) when you hit Save on the edit form; the preview shown while
-  editing is a local `FileReader` data URL until then. The badge image is
-  just a small thumbnail; the certificate PDF is the actual document and is
-  what "Download" on the profile page and public record links to.
+- Photos, certification badge images, and certificate PDFs upload into
+  `public.files` when you hit Save on the edit form; the preview shown while
+  editing is a local `FileReader` data URL until then. Photos, badges, and
+  logos are read through `file.php`. Certificates use a short-lived grant
+  token. The badge image is a small thumbnail; the certificate PDF is the
+  document "Download" links to.
 - Share links now resolve from any device (not just the browser that created
   them), since data lives in Postgres instead of browser storage — the thing
   that made `localStorage`-only persistence insufficient for real sharing.

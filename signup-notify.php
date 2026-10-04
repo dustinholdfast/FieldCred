@@ -90,7 +90,7 @@ $html = '<div style="font-family:sans-serif;color:#1c2430;max-width:560px;">'
     . '<tr><td style="padding:6px 0;color:#5b6472;">Domain</td><td style="padding:6px 0;font-weight:600;">' . ($domain !== '' ? escapeHtml($domain) : '<em>not given</em>') . '</td></tr>'
     . '</table>'
     . ($note !== '' ? '<p style="color:#5b6472;"><strong>Note:</strong><br>' . nl2br(escapeHtml($note)) . '</p>' : '')
-    . '<p style="margin-top:20px;font-size:11px;color:#8a919e;">Provision this in Supabase, then add an entry to tenants.php — see supabase/PROVISIONING.md.</p>'
+    . '<p style="margin-top:20px;font-size:11px;color:#8a919e;">Provision this in Neon, then add an entry to tenants.php — see neon/README.md.</p>'
     . '</div>';
 
 $ch = curl_init('https://api.resend.com/emails');

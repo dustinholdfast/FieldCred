@@ -5,7 +5,7 @@ import { summarizeCertStatuses } from '../lib/status.js';
 import { deriveVerdict, logGateScan, resolveSite, resolveWorker, VERDICT } from '../lib/gateVerdict.js';
 import { shieldLogo, logoImage } from '../components/logo.js';
 import { avatarHtml } from '../components/avatar.js';
-import { tenantName, tenantLogoUrl, tenantSlug } from '../lib/supabaseClient.js';
+import { tenantName, tenantLogoUrl, tenantSlug } from '../lib/backendClient.js';
 import { isStale } from '../lib/offlineCache.js';
 
 // Offline fallback banner — shown when this record or the gate site came

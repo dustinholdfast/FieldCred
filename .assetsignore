@@ -25,6 +25,7 @@
 
 # Separate apps and non-docroot trees
 /android/
+/neon/
 /supabase/
 /billing-service/
 /Marketing/

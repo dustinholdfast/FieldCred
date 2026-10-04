@@ -40,6 +40,7 @@
       "/tenant-lookup.php",
       "/tenant-lookup-by-domain.php",
       "/signup-notify.php",
+      "/file.php",
       "/tenants.php",
       "/signup-config.php",
       "/rate-limit.php"

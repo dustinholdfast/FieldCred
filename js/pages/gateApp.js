@@ -30,7 +30,7 @@
 import { startScanner, parseScannedCode } from '../lib/qrScanner.js';
 import { navigate, getPath } from '../lib/router.js';
 import { escapeHtml, formatTime, initials } from '../lib/format.js';
-import { tenantSlug } from '../lib/supabaseClient.js';
+import { tenantSlug } from '../lib/backendClient.js';
 import { getSession } from '../lib/auth.js';
 import { isPermissionError, roleFromSession, roleLabel } from '../lib/roles.js';
 import { store } from '../lib/state.js';
