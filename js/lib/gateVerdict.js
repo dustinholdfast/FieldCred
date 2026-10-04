@@ -199,14 +199,13 @@ export async function resolveSite(slug) {
  * SITE LOG" instead of claiming it landed.
  *
  * The RPC re-derives clearance server-side and ignores anything we computed
- * here; that's the point (see migration 009 / 014). This function deliberately
- * does not pass the client's verdict anywhere. direction/deviceId/guardLabel
- * are presence/audit metadata only (migration 014).
+ * here; that's the point (see migration 009). This function deliberately does
+ * not pass the client's verdict anywhere.
  */
-export async function logGateScan(siteSlug, workerSlug, { direction = 'in', deviceId = null, guardLabel = null } = {}) {
+export async function logGateScan(siteSlug, workerSlug) {
   if (!siteSlug || !workerSlug) return { logged: false, queued: false };
   try {
-    await store.recordGateScan(siteSlug, workerSlug, { direction, deviceId, guardLabel });
+    await store.recordGateScan(siteSlug, workerSlug);
     return { logged: true, queued: false };
   } catch {
     try {
@@ -227,9 +226,8 @@ export async function logGateScan(siteSlug, workerSlug, { direction = 'in', devi
  * check and an identical audit row, and differs only in the kicker on screen.
  * Set `log:false` for a check that must NOT be written to the audit log; the
  * only such case today is a badge from another tenant (see gateApp.js).
- * `direction` is 'in' | 'out' for presence (migration 014).
  */
-export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date(), direction = 'in', deviceId = null, guardLabel = null } = {}) {
+export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date() } = {}) {
   const [w, s] = await Promise.all([resolveWorker(workerSlug), resolveSite(siteSlug)]);
   const verdict = deriveVerdict(w.worker, s.site, { today });
 
@@ -240,7 +238,7 @@ export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = t
 
   let logResult = { logged: false, queued: false };
   if (log && siteSlug && workerSlug) {
-    logResult = await logGateScan(siteSlug, workerSlug, { direction, deviceId, guardLabel });
+    logResult = await logGateScan(siteSlug, workerSlug);
   }
 
   return {

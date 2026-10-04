@@ -90,6 +90,18 @@ function initialsSquareHtml(name, className) {
   return `<div class="${className}">${escapeHtml(initials(name || '') || '—')}</div>`;
 }
 
+// A gate verdict is also an identity check: show the record photo when one is
+// available, but keep the existing initials tile underneath so a missing or
+// unreachable image never leaves a blank square (especially while offline).
+function recordPhotoHtml(worker, className) {
+  const name = worker?.name || '';
+  if (!worker?.photoUrl) return initialsSquareHtml(name, className);
+  return `<div class="${className}">
+    <span class="gate-avatar-photo-fallback" aria-hidden="true">${escapeHtml(initials(name) || '—')}</span>
+    <img src="${escapeHtml(worker.photoUrl)}" alt="" decoding="async">
+  </div>`;
+}
+
 function arrowButtonHtml(label, action, variant) {
   return `<button class="gate-btn gate-btn-${variant}" type="button" data-action="${action}">
     <span>${escapeHtml(label)}</span><span aria-hidden="true">→</span>
@@ -211,8 +223,8 @@ function clearedHtml(v, ctx) {
         ${verdictKickerHtml(v)}
         <div class="gate-headline gate-headline-cleared">CLEARED</div>
         <div class="gate-rule"></div>
-        <div class="gate-worker-row">
-          ${initialsSquareHtml(v.worker?.name, 'gate-avatar')}
+        <div class="gate-worker-row gate-worker-record">
+          ${recordPhotoHtml(v.worker, 'gate-avatar gate-avatar-record')}
           <div>
             <div class="gate-worker-name">${escapeHtml(v.worker?.name || '')}</div>
             <div class="gate-worker-sub">${escapeHtml(workerSubline(v.worker))}</div>
@@ -246,8 +258,8 @@ function blockedHtml(v, ctx) {
         ${verdictKickerHtml(v)}
         <div class="gate-headline gate-headline-blocked">NOT<br>CLEARED</div>
         <div class="gate-rule gate-rule-invert"></div>
-        <div class="gate-worker-row">
-          ${initialsSquareHtml(v.worker?.name, 'gate-avatar gate-avatar-invert')}
+        <div class="gate-worker-row gate-worker-record">
+          ${recordPhotoHtml(v.worker, 'gate-avatar gate-avatar-record gate-avatar-invert')}
           <div>
             <div class="gate-worker-name">${escapeHtml(v.worker?.name || '')}</div>
             <div class="gate-worker-sub">${escapeHtml(workerSubline(v.worker))}</div>
@@ -297,8 +309,8 @@ function neutralVerdictHtml(v, ctx, { headline, body }) {
         <div class="gate-rule"></div>
         ${
           v.worker
-            ? `<div class="gate-worker-row">
-                 ${initialsSquareHtml(v.worker.name, 'gate-avatar')}
+            ? `<div class="gate-worker-row gate-worker-record">
+                 ${recordPhotoHtml(v.worker, 'gate-avatar gate-avatar-record')}
                  <div>
                    <div class="gate-worker-name">${escapeHtml(v.worker.name)}</div>
                    <div class="gate-worker-sub">${escapeHtml(workerSubline(v.worker))}</div>
@@ -777,6 +789,12 @@ export async function renderGateApp(container, _params, query) {
         html = guardHomeHtml(ctx);
     }
     container.innerHTML = `<div class="gate-app">${html}</div>`;
+
+    // The initials remain behind the image as a resilient fallback. Removing
+    // a failed image reveals them without changing the verdict layout.
+    for (const image of container.querySelectorAll('.gate-avatar-record img')) {
+      image.addEventListener('error', () => image.remove(), { once: true });
+    }
 
     if (ctx.screen === 'scanner' && !scanner) startCamera();
     // Left the scanner — the camera must go with the markup that held it.

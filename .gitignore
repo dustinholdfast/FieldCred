@@ -1,0 +1,28 @@
+# Signing material for the Android app. A keystore in the repo is a keystore
+# in the web docroot on the next deploy — anyone holding it can publish an
+# update that impersonates FieldCred on the Play Store. Keep keystores
+# outside the repo entirely (see android/README.md); these patterns are a
+# backstop, not the plan.
+*.keystore
+*.jks
+*.p12
+keystore.properties
+
+# Bubblewrap writes the keystore passwords here in plain text after a build.
+android/.bubblewrap-cli-config.json
+
+# Generated Android build output — rebuilt from android/twa-manifest.json,
+# never edited by hand, and large.
+android/app/
+android/build/
+android/.gradle/
+android/gradle*
+android/gradlew*
+android/local.properties
+android/*.apk
+android/*.aab
+android/*.idsig
+
+# Node is only ever used for `node --test` and one-off tooling; this project
+# ships with no dependencies and no build step.
+node_modules/

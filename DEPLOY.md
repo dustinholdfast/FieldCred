@@ -29,13 +29,11 @@ entire class of failure.
 .well-known/
 assets/
 css/
-guides/
 help-center/
 js/
 index.html
 knowledge-base.html
 manifest.webmanifest
-sitemap.xml
 sw.js
 rate-limit.php
 signup-config.php
@@ -93,7 +91,7 @@ something that is not fixable there.
 ### 2. Root-level files
 
 Clients set to sync directories will happily upload `js/`, `css/`, `assets/`
-and `help-center/` / `guides/` while leaving every file at the docroot root untouched —
+and `help-center/` while leaving every file at the docroot root untouched —
 `index.html`, `manifest.webmanifest`, `sw.js`, `knowledge-base.html`, the PHP
 endpoints. A stale `index.html` is especially quiet: the app boots and works,
 but its `<link rel="manifest">`, CSP meta tag and modulepreloads are whatever
@@ -110,8 +108,7 @@ and catches both failure modes above.
 # 1. Nothing 404s that shouldn't
 for f in index.html manifest.webmanifest sw.js knowledge-base.html \
          .well-known/assetlinks.json js/main.js js/pages/gateApp.js \
-         js/lib/gateVerdict.js js/lib/qrScanner.js help-center/index.html \
-         guides/index.html sitemap.xml; do
+         js/lib/gateVerdict.js js/lib/qrScanner.js help-center/index.html; do
   printf '%s  %s\n' "$(curl -s -o /dev/null -w '%{http_code}' "https://app.fieldcred.co/$f")" "$f"
 done
 

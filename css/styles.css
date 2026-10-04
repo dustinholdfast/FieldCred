@@ -1015,21 +1015,40 @@ img { display: block; max-width: 100%; }
 .gate-headline-neutral { font-size: 40px; line-height: 0.98; color: var(--g-muted); }
 
 .gate-worker-row { display: flex; align-items: center; gap: 12px; flex: none; }
+.gate-worker-record { align-items: flex-end; gap: 16px; }
 .gate-avatar {
   width: 56px;
   height: 56px;
   flex: none;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: var(--g-ink);
   color: #fff;
   font-size: 20px;
   font-weight: 700;
 }
+.gate-avatar-record {
+  width: clamp(160px, 44vw, 192px);
+  height: clamp(160px, 44vw, 192px);
+  font-size: 42px;
+}
+.gate-avatar-photo-fallback { display: block; }
+.gate-avatar img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 .gate-avatar-invert { background: #fff; color: var(--g-alert); }
 .gate-avatar-sm { width: 40px; height: 40px; font-size: 14px; }
 .gate-header-sup .gate-avatar-sm { width: 36px; height: 36px; font-size: 13px; }
+.gate-worker-record .gate-worker-name { font-size: 22px; line-height: 1.1; }
 .gate-worker-name { font-size: 18px; font-weight: 700; }
 .gate-worker-sub { font-size: 12.5px; color: var(--g-muted); margin-top: 2px; }
 .gate-screen-alert .gate-worker-sub { color: rgba(255, 255, 255, 0.8); }
