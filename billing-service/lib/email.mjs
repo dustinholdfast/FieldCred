@@ -46,7 +46,7 @@ export async function sendTenantLiveAlert(signup) {
       <p style="padding:12px;border-left:4px solid #c99a00;background:#fff8e1">
         <strong>One thing needs you.</strong> No <code>tenant_billing</code> row was written for this
         tenant, because the DB connection string wasn't recoverable from the provisioning output
-        (Supabase prints it exactly once, on fresh project creation only). The customer is unaffected
+        (the provisioner prints it once, on fresh project creation only). The customer is unaffected
         and can sign in normally, but <em>plan-limit changes and the Customer Portal button will fail
         for them</em> until <code>tenant_billing.db_url</code> is backfilled by hand.
       </p>`
@@ -59,7 +59,8 @@ export async function sendTenantLiveAlert(signup) {
       <p><strong>${escapeHtml(signup.company_name)}</strong> (${escapeHtml(signup.admin_email)})
       just paid and provisioned as <code>${escapeHtml(signup.slug)}</code>.</p>
       <p>They are <strong>live now</strong> — the tenant registry entry was written automatically,
-      and their Supabase admin invite has already gone out. No deploy step, nothing to paste,
+      and the Neon project exists. Create the admin in Neon Auth and add a staff_roles row
+      before they can sign in. No deploy step, nothing to paste,
       nothing for you to do.</p>
       ${billingWarning}
       <p style="color:#666;font-size:13px">Registry entry, for reference — this is what used to
@@ -70,14 +71,10 @@ export async function sendTenantLiveAlert(signup) {
   });
 }
 
-/** The degraded path. Provisioning succeeded, but the Supabase URL/anon key
- * couldn't be recovered from its output, so no tenant_registry entry was
- * written and the tenant will only resolve via the flat tenants.php
- * fallback. Deploying that entry by hand is the escape hatch.
- *
- * The real fix is upstream: provision-tenant.mjs should print its
- * "tenants.php entry" block on every run, not only when it creates a
- * project from scratch. Until it does, a RESUMED provision lands here. */
+/** The degraded path. Provisioning created a Neon project, but Auth and Data
+ * API URLs were not in the output, so no tenant_registry entry was written
+ * and the tenant will only resolve via the flat tenants.php fallback.
+ * Enabling those features and deploying the two public URLs is the escape hatch. */
 export async function sendDeployNeededAlert(signup) {
   if (!ALERT_EMAIL) {
     console.error('OPERATOR_ALERT_EMAIL not set — cannot send deploy-needed alert.');
@@ -88,22 +85,21 @@ export async function sendDeployNeededAlert(signup) {
     subject: `[FieldCred] "${signup.slug}" provisioned but is NOT reachable — needs manual registry deploy`,
     html: `
       <p><strong>${escapeHtml(signup.company_name)}</strong> (${escapeHtml(signup.admin_email)})
-      paid and provisioned cleanly as <code>${escapeHtml(signup.slug)}</code>. Their Supabase admin
-      invite has gone out.</p>
+      paid and provisioned cleanly as <code>${escapeHtml(signup.slug)}</code>.</p>
       <p style="padding:12px;border-left:4px solid #c0392b;background:#fdecea">
         <strong>They cannot sign in yet.</strong> The automatic registry entry could not be written,
-        because provisioning didn't report the Supabase URL and anon key — which is what happens on a
-        <em>resumed</em> run, since those are only printed on fresh project creation.
+        because provisioning didn't report Neon Auth and Data API URLs. Those exist only after
+        both features are enabled on the project.
       </p>
       <p>Escape hatch: add this to <code>tenants.php</code> and deploy it, which the tenant lookup
       still falls back to.</p>
       <pre>${escapeHtml(signup.tenants_php_entry)}</pre>
       <p>Better: insert it into the registry directly, and no deploy is needed at all —</p>
-      <pre>insert into tenant_registry (slug, supabase_url, supabase_anon_key, source)
-values ('${escapeHtml(signup.slug)}', '&lt;url from above&gt;', '&lt;anonKey from above&gt;', 'stripe')
+      <pre>insert into tenant_registry (slug, auth_url, data_api_url, source)
+values ('${escapeHtml(signup.slug)}', '&lt;NEON_AUTH_URL&gt;', '&lt;NEON_DATA_API_URL&gt;', 'stripe')
 on conflict (slug) do update set
-  supabase_url = excluded.supabase_url,
-  supabase_anon_key = excluded.supabase_anon_key,
+  auth_url = excluded.auth_url,
+  data_api_url = excluded.data_api_url,
   updated_at = now();</pre>
       <p>Then mark the signup live:
       <code>update signups set status = 'live' where id = '${escapeHtml(signup.id)}';</code></p>

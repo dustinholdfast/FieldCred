@@ -1,6 +1,6 @@
 import { signIn, requestPasswordReset } from '../lib/auth.js';
 import { navigate } from '../lib/router.js';
-import { isConfigured, tenantSlug, tenantName, usedFallback } from '../lib/supabaseClient.js';
+import { isConfigured, tenantSlug, tenantName, usedFallback } from '../lib/backendClient.js';
 import { setTenantOverride } from '../lib/tenant.js';
 import { escapeHtml } from '../lib/format.js';
 import { logoImage } from '../components/logo.js';
@@ -8,8 +8,8 @@ import { logoImage } from '../components/logo.js';
 const PENDING_EMAIL_KEY = 'fieldcred:pending-email';
 
 // Switches to a different tenant by persisting the override and doing a
-// full reload — the Supabase client is tied to one project, so there's no
-// clean way to hot-swap it mid-session; a fresh load re-runs initSupabase()
+// full reload — the Neon client is tied to one project, so there's no
+// clean way to hot-swap it mid-session; a fresh load re-runs initBackend()
 // against the new tenant instead.
 function reloadIntoTenant(slug, pendingEmail) {
   if (pendingEmail) {
@@ -51,7 +51,7 @@ export function renderLogin(container, params, query) {
         <div class="auth-card">
           <div class="auth-brand">${logoImage({ width: 160 })}</div>
           <div class="auth-title">Backend not configured</div>
-          <div class="auth-sub">Tenant "${escapeHtml(tenantSlug || '')}" wasn't found in the tenant registry, and no fallback is set in <code>js/lib/config.js</code>. Check <code>tenants.php</code>, or run <code>supabase/schema.sql</code> for a single-tenant setup and fill in <code>config.js</code>, then reload. To test a specific tenant directly, visit this page with <code>?tenant=slug</code> in the URL.</div>
+          <div class="auth-sub">Tenant "${escapeHtml(tenantSlug || '')}" wasn't found in the tenant registry, and no fallback is set in <code>js/lib/config.js</code>. Check <code>tenants.php</code>, or run <code>neon/schema.sql</code> on a Neon database and fill in <code>NEON_AUTH_URL</code> and <code>NEON_DATA_API_URL</code>, then reload. To test a specific tenant directly, visit this page with <code>?tenant=slug</code> in the URL.</div>
         </div>
       </div>
     `;

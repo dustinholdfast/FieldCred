@@ -2,7 +2,7 @@ import { store } from '../lib/state.js';
 import { escapeHtml, formatDate } from '../lib/format.js';
 import { navigate, redispatch } from '../lib/router.js';
 import { certStatus, statusLabel, STATUS_META, isCompliant } from '../lib/status.js';
-import { tenantName, tenantSlug, setTenantName, setTenantLogoUrl } from '../lib/supabaseClient.js';
+import { tenantName, tenantSlug, setTenantName, setTenantLogoUrl } from '../lib/backendClient.js';
 import { BILLING_SERVICE_URL } from '../lib/config.js';
 import { getSession, currentRole } from '../lib/auth.js';
 import { roleCan } from '../lib/roles.js';

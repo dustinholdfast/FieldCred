@@ -1,60 +1,98 @@
-import { supabase, tenantSlug } from './supabaseClient.js';
+import { db, tenantSlug, authUrl } from './backendClient.js';
 import { roleFromSession } from './roles.js';
 
+// Neon Auth does not put fc_role on the session. The database does, in
+// staff_roles, via current_fc_role(). Stamp it onto app_metadata so the
+// rest of the app (roleFromSession) keeps reading one place.
+async function withRole(session) {
+  if (!session?.user || !db) return session;
+  try {
+    const { data, error } = await db.rpc('current_fc_role');
+    if (error || data == null) return session;
+    const role = Array.isArray(data) ? data[0] : data;
+    if (typeof role === 'string' && role) {
+      session.user.app_metadata = { ...(session.user.app_metadata || {}), fc_role: role };
+    }
+  } catch {
+    // Schema not applied yet — leave the session unchanged. The UI then
+    // treats a missing claim as admin (js/lib/roles.js); the database
+    // still defaults to unassigned and refuses staff queries.
+  }
+  return session;
+}
+
 export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
+  if (data?.session) await withRole(data.session);
   return data.session;
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
 }
 
 export async function getSession() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await db.auth.getSession();
+  if (data?.session) await withRole(data.session);
   return data.session;
 }
 
 // The current user's role (admin | safety | gate), read from the session
-// JWT's app_metadata. Defaults to 'admin' for existing users with no
-// fc_role claim — see js/lib/roles.js. Note (JWT staleness): a role change
-// made in the Supabase dashboard only reaches the client after the token
-// refreshes (~1h) or the user signs out and back in.
+// after withRole() has copied current_fc_role() onto app_metadata. A missing
+// claim still resolves to admin in the UI (js/lib/roles.js). The database
+// default is unassigned — see neon/schema.sql.
 export async function currentRole() {
   const session = await getSession();
   return roleFromSession(session);
 }
 
-// Sends Supabase's built-in password-reset email. redirectTo is where the
-// link in that email lands the user — back at the app, where the resulting
-// PASSWORD_RECOVERY auth event (handled in main.js) shows the set-new-password
-// screen. Uses the path without any hash so it doesn't collide with the app's
-// hash router; Supabase appends its own recovery token to the URL as a hash
-// fragment, so a ?tenant= query param here doesn't interfere with it.
-//
-// The ?tenant= is required, not cosmetic: the recovery token Supabase
-// appends is only valid against THIS tenant's own Supabase project. If the
-// link is opened on a device with no matching localStorage override (the
-// normal case — a recovery email is often opened on a different device
-// than the one that requested it), resolveTenantSlug() would otherwise
-// silently fall back to 'default' and initialize the wrong project's
-// client, breaking recovery for every tenant except 'default' itself. Same
-// bug class as the QR/share links in badgeCards.js and shareDialog.js,
-// found via a real broken QR scan on the demo tenant, 2026-07-14.
+// Sends Neon Auth's password-reset email. redirectTo is where the link
+// lands. Neon appends ?token= (preserving an existing ?tenant=). main.js
+// sees that token and opens the set-password screen. The ?tenant= is
+// required: the token is only valid against THIS tenant's Neon Auth, and
+// a reset email is often opened on a different device than the one that
+// requested it.
 export async function requestPasswordReset(email) {
   const redirectTo = `${location.origin}${location.pathname}?tenant=${encodeURIComponent(tenantSlug)}`;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) throw error;
 }
 
-// Sets a new password for the user in the (recovery) session.
+// Sets a new password from the token on the reset link. Neon Auth's
+// Supabase-compatible updateUser() does not accept a password.
 export async function updatePassword(newPassword) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) throw error;
+  const token = new URLSearchParams(location.search).get('token');
+  if (!token || !authUrl) {
+    throw new Error('This reset link is missing its token. Request a new one from the sign-in page.');
+  }
+  const res = await fetch(`${authUrl.replace(/\/$/, '')}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newPassword, token }),
+  });
+  if (!res.ok) {
+    let message = 'Could not update your password.';
+    try {
+      const body = await res.json();
+      message = body?.message || body?.error || message;
+    } catch {
+      // non-JSON error body
+    }
+    throw new Error(typeof message === 'string' ? message : 'Could not update your password.');
+  }
+  const url = new URL(location.href);
+  url.searchParams.delete('token');
+  history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
 export function onAuthStateChange(callback) {
-  const { data } = supabase.auth.onAuthStateChange((event, session) => callback(session, event));
+  const { data } = db.auth.onAuthStateChange((event, session) => {
+    if (!session) {
+      callback(null, event);
+      return;
+    }
+    withRole(session).then((enriched) => callback(enriched, event));
+  });
   return () => data.subscription.unsubscribe();
 }

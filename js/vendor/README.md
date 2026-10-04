@@ -5,29 +5,25 @@ dependencies are self-hosted here rather than pulled from a CDN at runtime — a
 CDN outage can't take the app down, an upstream release can't land untested, and
 a strict `script-src 'self'` CSP is satisfiable.
 
-## `supabase-js.js` (+ `node/`)
+## `neon-js.js`
 
-Supabase JS client, **pinned to `@2.110.5`**, bundled to a single ES module.
-`node/*.mjs` are the small Node polyfills (buffer/process/events/tty/async_hooks)
-that the bundle imports; their paths were rewritten from esm.sh-absolute
-(`/node/x.mjs`) to local-relative (`./node/x.mjs`).
+Neon JS client, **pinned to `@neondatabase/neon-js@0.7.0-beta`**, bundled to a
+single ES module (`createClient` + `SupabaseAuthAdapter`). The app has no
+runtime npm install; this file is the client.
 
 ### Re-vendoring / upgrading
 
+From a temporary install of the package (do not leave it in `package.json`):
+
 ```sh
-# 1. Fetch the bundled build for the version you want:
-curl -sL "https://esm.sh/@supabase/supabase-js@<VERSION>/es2020/supabase-js.bundle.mjs" -o supabase-js.js
-
-# 2. Fetch each /node/*.mjs it imports (transitively) into node/, then rewrite paths:
-sed -i 's#"/node/#"./node/#g' supabase-js.js
-sed -i 's#"/node/#"./#g' node/*.mjs
-
-# 3. Confirm nothing external remains, and run the app's login page — it should
-#    reach Supabase ("Connecting to <tenant>") with no console errors:
-grep -R '"/node/\|https://' . && echo "external refs remain — fix before shipping"
+# neon-entry.mjs:
+#   export { createClient, SupabaseAuthAdapter } from '@neondatabase/neon-js';
+npx esbuild ./neon-entry.mjs --bundle --format=esm --platform=browser --target=es2020 --outfile=./js/vendor/neon-js.js --legal-comments=none
 ```
 
-Then bump the version note in `js/lib/supabaseClient.js`.
+Confirm the bundle has no leftover `from "..."` imports, then delete the
+entry file and the temporary `node_modules`. Bump the version note in
+`js/lib/backendClient.js`.
 
 ## `qrcode.min.js`
 

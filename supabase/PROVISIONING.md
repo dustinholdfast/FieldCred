@@ -1,5 +1,11 @@
 # Provisioning a new tenant
 
+> Historical. New tenants are Neon projects. Follow `neon/README.md`.
+> This document describes the old Supabase project-per-tenant flow and is
+> kept so existing notes still make sense.
+
+
+
 Each tenant gets its own, fully separate Supabase project (own Postgres
 database, own Storage buckets, own set of users).
 

@@ -1,6 +1,6 @@
 <?php
 // Resolves a tenant from an email's domain — ?email=jane@acmecorp.com
-// returns { slug, name, url, anonKey } for whichever tenant claims that
+// returns { slug, name, authUrl, dataApiUrl } for whichever tenant claims that
 // domain, or 404 if none does.
 //
 // Prefers the billing-service tenant_registry (written automatically on
@@ -58,12 +58,12 @@ if ($billingUrl !== '') {
 
     if ($curlError === '' && $httpCode === 200 && is_string($body) && $body !== '') {
         $data = json_decode($body, true);
-        if (is_array($data) && !empty($data['url']) && !empty($data['anonKey'])) {
+        if (is_array($data) && !empty($data['authUrl']) && !empty($data['dataApiUrl'])) {
             echo json_encode([
                 'slug' => $data['slug'] ?? '',
                 'name' => $data['name'] ?? ($data['slug'] ?? $domain),
-                'url' => $data['url'],
-                'anonKey' => $data['anonKey'],
+                'authUrl' => $data['authUrl'],
+                'dataApiUrl' => $data['dataApiUrl'],
             ]);
             exit;
         }
@@ -85,8 +85,8 @@ foreach ($tenants as $slug => $entry) {
         echo json_encode([
             'slug' => $slug,
             'name' => $entry['name'] ?? $slug,
-            'url' => $entry['url'],
-            'anonKey' => $entry['anonKey'],
+            'authUrl' => $entry['authUrl'] ?? '',
+            'dataApiUrl' => $entry['dataApiUrl'] ?? '',
         ]);
         exit;
     }

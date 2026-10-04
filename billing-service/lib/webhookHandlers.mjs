@@ -154,8 +154,8 @@ export async function provisionInBackground(signup) {
   const manifest = {
     slug: signup.slug,
     name: signup.company_name,
-    organizationId: process.env.SUPABASE_ORG_ID,
-    region: process.env.SUPABASE_REGION || 'us-east-2',
+    organizationId: process.env.NEON_ORG_ID,
+    region: process.env.NEON_REGION_ID || 'aws-us-east-2',
     adminEmail: signup.admin_email,
     domains: [],
     planTier: signup.plan_tier,
@@ -174,14 +174,15 @@ export async function provisionInBackground(signup) {
     return;
   }
 
-  // Extract the DB connection string (only ever printed this once — see
-  // provision-tenant.mjs's printDbUrl comment) plus the Supabase project
-  // URL/anon key embedded in the tenants.php entry text, and store them so
-  // the subscription webhook and Customer Portal endpoint can reach this
-  // tenant later. See schema.sql's security note on tenant_billing.
+  // Extract the DB connection string (printed once, between the DATABASE_URL
+  // markers) plus authUrl and dataApiUrl from a tenants.php entry, when the
+  // provisioner actually printed one. Store them so the subscription webhook
+  // and Customer Portal endpoint can reach this tenant later. See schema.sql's
+  // security note on tenant_billing. Neon Auth and the Data API are often
+  // enabled after project create, so a fresh run may have no public URLs yet.
   const dbUrl = result.dbUrlLine ? result.dbUrlLine.split('=').slice(1).join('=').trim() : null;
-  const supabaseUrl = result.tenantsPhpEntry?.match(/'url'\s*=>\s*'([^']+)'/)?.[1] || null;
-  const anonKey = result.tenantsPhpEntry?.match(/'anonKey'\s*=>\s*"([^"]+)"/)?.[1] || null;
+  const authUrl = result.tenantsPhpEntry?.match(/'authUrl'\s*=>\s*'([^']+)'/)?.[1] || null;
+  const dataApiUrl = result.tenantsPhpEntry?.match(/'dataApiUrl'\s*=>\s*'([^']+)'/)?.[1] || null;
 
   // These two capabilities are deliberately kept separate, because they
   // fail independently and one is far more urgent than the other:
@@ -198,7 +199,7 @@ export async function provisionInBackground(signup) {
   // Treating them as one condition (as this did before the registry
   // existed) means a missing db_url — the value Supabase prints exactly
   // once and never again — would also block login. It shouldn't.
-  const canServeTenant = Boolean(supabaseUrl && anonKey);
+  const canServeTenant = Boolean(authUrl && dataApiUrl && !authUrl.startsWith('PASTE_') && !dataApiUrl.startsWith('PASTE_'));
   const canTrackBilling = Boolean(canServeTenant && dbUrl);
 
   if (canServeTenant) {
@@ -206,29 +207,29 @@ export async function provisionInBackground(signup) {
     // tenants.php edit and FTP deploy. Writing it here is what closes that
     // gap — see migrations/002_tenant_registry.sql.
     await pool.query(
-      `insert into tenant_registry (slug, supabase_url, supabase_anon_key, source, status, grace_period_ends_at)
+      `insert into tenant_registry (slug, auth_url, data_api_url, source, status, grace_period_ends_at)
        values ($1, $2, $3, 'stripe', 'active', null)
        on conflict (slug) do update set
-         supabase_url         = excluded.supabase_url,
-         supabase_anon_key    = excluded.supabase_anon_key,
+         auth_url             = excluded.auth_url,
+         data_api_url         = excluded.data_api_url,
          status               = 'active',
          grace_period_ends_at = null,
          updated_at           = now()`,
-      [signup.slug, supabaseUrl, anonKey]
+      [signup.slug, authUrl, dataApiUrl]
     );
   }
 
   if (canTrackBilling) {
     await pool.query(
-      `insert into tenant_billing (slug, stripe_customer_id, price_id, plan_tier, db_url, supabase_url, supabase_anon_key)
+      `insert into tenant_billing (slug, stripe_customer_id, price_id, plan_tier, db_url, auth_url, data_api_url)
        values ($1, $2, $3, $4, $5, $6, $7)
        on conflict (slug) do update set
-         db_url = excluded.db_url, supabase_url = excluded.supabase_url, supabase_anon_key = excluded.supabase_anon_key`,
-      [signup.slug, signup.stripe_customer_id, signup.price_id, signup.plan_tier, dbUrl, supabaseUrl, anonKey]
+         db_url = excluded.db_url, auth_url = excluded.auth_url, data_api_url = excluded.data_api_url`,
+      [signup.slug, signup.stripe_customer_id, signup.price_id, signup.plan_tier, dbUrl, authUrl, dataApiUrl]
     );
   } else {
     console.error(
-      `[provision] no tenant_billing row for ${signup.slug} (dbUrl=${!!dbUrl}, supabaseUrl=${!!supabaseUrl}, anonKey=${!!anonKey}) — ` +
+      `[provision] no tenant_billing row for ${signup.slug} (dbUrl=${!!dbUrl}, authUrl=${!!authUrl}, dataApiUrl=${!!dataApiUrl}) — ` +
       `this happens when resuming an already-existing project, since those fields are only printed on fresh creation. ` +
       `Subscription plan updates and the Customer Portal link will fail for this tenant until tenant_billing.db_url is backfilled by hand.`
     );

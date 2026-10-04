@@ -1,9 +1,11 @@
 // Fallback project, used only if the tenant registry (tenant-lookup.php)
 // is unreachable — e.g. local dev without PHP running. In normal
-// operation each tenant's real URL/key comes from tenants.php instead;
-// see supabase/PROVISIONING.md. The anon/public key is safe to ship in
-// client-side code — it only grants what the RLS policies in
-// supabase/schema.sql allow.
+// operation each tenant's Auth URL and Data API URL come from tenants.php
+// (or the billing registry). See neon/README.md.
+//
+// These are public endpoints, like the old anon key: they grant only what
+// neon/schema.sql grants the anonymous and authenticated roles. Leave them
+// empty until a real Neon branch exists. Do not put a database password here.
 // Billing service origin — the Node service on Railway that owns Stripe
 // and the tenant registry (see billing-service/README.md). Used by the
 // admin page's capacity button to open a Stripe Customer Portal session
@@ -20,5 +22,5 @@
 // pilot tenants with no Stripe record anyway.
 export const BILLING_SERVICE_URL = 'https://billing-service-production-783a.up.railway.app';
 
-export const SUPABASE_URL = 'https://qiozckjlojvhdtrsjzfp.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpb3pja2psb2p2aGR0cnNqemZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTIxMTIsImV4cCI6MjA5OTA4ODExMn0.jzW1T1UyHieK5HhUGFCCHbHFRtq6JHhxKDBRdhtOoFo';
+export const NEON_AUTH_URL = '';
+export const NEON_DATA_API_URL = '';

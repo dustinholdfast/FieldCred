@@ -1,7 +1,7 @@
 <?php
-// FieldCred tenant registry — maps a tenant slug to its own Supabase
-// project (URL + anon key). Add one entry per tenant you provision; see
-// supabase/PROVISIONING.md for the full checklist.
+// FieldCred tenant registry — maps a tenant slug to its own Neon project
+// (Auth URL + Data API URL). Add one entry per tenant you provision; see
+// neon/README.md. These URLs are public. Never put a database password here.
 //
 // `domains` (optional) lists the email domains that should auto-resolve to
 // this tenant — a client typing jane@acmecorp.com on the login screen
@@ -25,14 +25,17 @@ return [
 
     // 'acme' => [
     //     'name' => 'Acme Corp',
-    //     'url' => 'https://xxxxxxxxxxxxxxxx.supabase.co',
-    //     'anonKey' => 'eyJ...',
+    //     'authUrl' => 'https://ep-example.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+    //     'dataApiUrl' => 'https://ep-example.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
     //     'domains' => ['acmecorp.com'],
     // ],
+    // Demo stays unconfigured until NEON_AUTH_URL / NEON_DATA_API_URL for that
+    // branch are filled in. Empty strings make the app report "not configured"
+    // instead of talking to the retired Supabase project.
     'demo' => [
         'name' => "FieldCred Demo",
-        'url' => 'https://kaktjqbbijyjejulbpgy.supabase.co',
-        'anonKey' => "sb_publishable_rdzQYMIOkkFvkcOCOqIW3Q_RV_DAJZo",
+        'authUrl' => '',
+        'dataApiUrl' => '',
     ],
 
 ];
