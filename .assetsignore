@@ -1,0 +1,44 @@
+# Public site is the app docroot. Everything below stays out of the asset
+# upload so it cannot be fetched from the Worker.
+
+# Staged by scripts/stage-assets.mjs. Not a source directory.
+/dist/
+
+# Worker source and deploy config
+/worker/
+/wrangler.jsonc
+/package.json
+/package-lock.json
+/nixpacks.toml
+/railway.json
+/.railwayignore
+/.gitignore
+/.gitattributes
+/.assetsignore
+/.htaccess
+/.dev.vars
+/.dev.vars.example
+
+# PHP is not executed on Workers. The three public routes are implemented in
+# worker/. signup-config.php holds the Resend API key and must not be uploaded.
+*.php
+
+# Separate apps and non-docroot trees
+/android/
+/supabase/
+/billing-service/
+/Marketing/
+/tests/
+/scripts/
+/.claude/
+/.git/
+/.wrangler/
+/node_modules/
+
+# Repo docs
+/*.md
+
+# Secrets, if one is ever dropped into the tree
+**/.env
+**/.env.*
+**/*.local

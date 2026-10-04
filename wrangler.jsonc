@@ -1,0 +1,52 @@
+{
+  // Deploy to the workers.dev hostname only.
+  // Do not add `routes`, a zone, or a custom domain for fieldcred.co here.
+  //   npx wrangler secret put RESEND_API_KEY
+  //   npx wrangler deploy
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fieldcred",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-04",
+  "workers_dev": true,
+  "build": {
+    "command": "node scripts/stage-assets.mjs",
+    "watch_dir": [
+      "js",
+      "css",
+      "assets",
+      "help-center",
+      "guides",
+      ".well-known",
+      "index.html",
+      "landing.html",
+      "knowledge-base.html",
+      "sitemap.xml",
+      "sw.js",
+      "manifest.webmanifest",
+      "_headers",
+      ".assetsignore"
+    ]
+  },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": [
+      "/",
+      "/help-center",
+      "/help-center/",
+      "/guides",
+      "/guides/",
+      "/tenant-lookup.php",
+      "/tenant-lookup-by-domain.php",
+      "/signup-notify.php",
+      "/tenants.php",
+      "/signup-config.php",
+      "/rate-limit.php"
+    ]
+  },
+  "vars": {
+    "RESEND_FROM": "FieldCred <onboarding@fieldcred.co>",
+    "NOTIFY_EMAIL": "dustin@fieldcred.co"
+  }
+}

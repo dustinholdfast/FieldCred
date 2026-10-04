@@ -5,9 +5,13 @@
   "type": "module",
   "description": "FieldCred — workforce credential platform (no build step; static ES modules + Supabase).",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "cf-dev": "wrangler dev",
+    "cf-deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.2"
+    "@capacitor/cli": "^8.4.2",
+    "ignore": "^7.0.12",
+    "wrangler": "^4.147.0"
   }
 }

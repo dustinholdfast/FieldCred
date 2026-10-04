@@ -1,0 +1,3 @@
+# Copy to .dev.vars for `npx wrangler dev`. .dev.vars is gitignored.
+# Do not put a service_role key or a database password here.
+RESEND_API_KEY=
