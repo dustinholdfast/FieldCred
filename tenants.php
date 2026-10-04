@@ -29,13 +29,12 @@ return [
     //     'dataApiUrl' => 'https://ep-example.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
     //     'domains' => ['acmecorp.com'],
     // ],
-    // Demo stays unconfigured until NEON_AUTH_URL / NEON_DATA_API_URL for that
-    // branch are filled in. Empty strings make the app report "not configured"
-    // instead of talking to the retired Supabase project.
+    // Public Neon Auth and Data API URLs for project cool-flower-78830338.
+    // No database password belongs in this file.
     'demo' => [
         'name' => "FieldCred Demo",
-        'authUrl' => '',
-        'dataApiUrl' => '',
+        'authUrl' => 'https://ep-falling-dream-b4s5gk7v.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+        'dataApiUrl' => 'https://ep-falling-dream-b4s5gk7v.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
     ],
 
 ];
