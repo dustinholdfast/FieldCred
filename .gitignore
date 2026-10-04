@@ -26,3 +26,8 @@ android/*.idsig
 # Node is only ever used for `node --test` and one-off tooling; this project
 # ships with no dependencies and no build step.
 node_modules/
+
+# Wrangler local state and secrets. RESEND_API_KEY belongs in .dev.vars
+# locally and in `wrangler secret put` for deploy — never in git.
+.wrangler/
+.dev.vars
