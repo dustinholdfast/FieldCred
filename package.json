@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "FieldCred — workforce credential platform (no build step; static ES modules + Supabase).",
+  "description": "FieldCred — workforce credential platform (no build step; static ES modules + Neon).",
   "scripts": {
     "test": "node --test"
   },

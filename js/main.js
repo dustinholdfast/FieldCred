@@ -15,7 +15,7 @@ import { renderLogin } from './pages/login.js';
 import { renderSignup } from './pages/signup.js';
 import { renderResetPassword } from './pages/resetPassword.js';
 import { getSession, onAuthStateChange, signOut } from './lib/auth.js';
-import { initSupabase, isConfigured, tenantName } from './lib/supabaseClient.js';
+import { initBackend, isConfigured, tenantName } from './lib/backendClient.js';
 import { installErrorReporting } from './lib/errorReporting.js';
 import { syncQueuedScans } from './lib/offlineSync.js';
 import { roleFromSession, roleCan } from './lib/roles.js';
@@ -249,7 +249,10 @@ const SET_PASSWORD_LINK_TYPES = new Set(['recovery', 'invite']);
 
 function isPasswordRecoveryLink() {
   const hashParams = new URLSearchParams(location.hash.slice(1));
-  return SET_PASSWORD_LINK_TYPES.has(hashParams.get('type'));
+  if (SET_PASSWORD_LINK_TYPES.has(hashParams.get('type'))) return true;
+  // Neon Auth's reset email lands here with ?token= on the query string
+  // (the hash router is untouched). A token means "set a password".
+  return new URLSearchParams(location.search).has('token');
 }
 
 // True for the whole visit once a recovery link is detected, until
@@ -263,7 +266,7 @@ export function exitRecoveryMode() {
 
 async function init() {
   recoveryModeActive = isPasswordRecoveryLink();
-  await initSupabase();
+  await initBackend();
   if (isConfigured) {
     onAuthStateChange((session, event) => {
       currentSession = session;

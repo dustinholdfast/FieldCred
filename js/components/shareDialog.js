@@ -2,7 +2,7 @@ import { icons } from '../lib/icons.js';
 import { escapeHtml, formatDate } from '../lib/format.js';
 import { store } from '../lib/state.js';
 import { showToast } from './toast.js';
-import { tenantSlug } from '../lib/supabaseClient.js';
+import { tenantSlug } from '../lib/backendClient.js';
 import { keepFocusInside, focusFirst } from '../lib/focusTrap.js';
 import { workerRecordUrl } from '../lib/publicLinks.js';
 import { qrNodeDataUrl } from '../lib/qrImage.js';

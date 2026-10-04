@@ -1,5 +1,8 @@
 // FieldCred — expiration alert emails.
 //
+// Historical Supabase Edge Function. The Neon path is
+// neon/expiration-alerts.mjs (same cadence, DATABASE_URL + RESEND_API_KEY).
+//
 // Runs on an hourly pg_cron tick (see CRON.sql) and, per invocation, checks
 // whether it's actually this tenant's configured moment to send — cadence
 // (daily/weekly), day-of-week, hour, all local to the tenant's chosen time

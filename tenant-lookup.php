@@ -1,5 +1,5 @@
 <?php
-// Returns { name, url, anonKey } for a given ?tenant=slug.
+// Returns { name, authUrl, dataApiUrl } for a given ?tenant=slug.
 //
 // Prefers the billing-service tenant_registry (written automatically on
 // Stripe Checkout provisioning). Falls back to the flat tenants.php file
@@ -49,13 +49,11 @@ if ($billingUrl !== '') {
 
     if ($curlError === '' && $httpCode === 200 && is_string($body) && $body !== '') {
         $data = json_decode($body, true);
-        if (is_array($data) && !empty($data['url']) && !empty($data['anonKey'])) {
-            // Key names match what js/lib/supabaseClient.js already expects.
-            // Billing service returns { url, anonKey, slug }; name is optional.
+        if (is_array($data) && !empty($data['authUrl']) && !empty($data['dataApiUrl'])) {
             echo json_encode([
                 'name' => $data['name'] ?? ($data['slug'] ?? $slug),
-                'url' => $data['url'],
-                'anonKey' => $data['anonKey'],
+                'authUrl' => $data['authUrl'],
+                'dataApiUrl' => $data['dataApiUrl'],
             ]);
             exit;
         }
@@ -82,6 +80,6 @@ if (!isset($tenants[$slug])) {
 $entry = $tenants[$slug];
 echo json_encode([
     'name' => $entry['name'] ?? $slug,
-    'url' => $entry['url'],
-    'anonKey' => $entry['anonKey'],
+    'authUrl' => $entry['authUrl'] ?? '',
+    'dataApiUrl' => $entry['dataApiUrl'] ?? '',
 ]);

@@ -81,9 +81,11 @@ function isResolvable(row) {
 }
 
 function shape(row) {
-  // Key names match what tenant-lookup.php already returns, so
-  // js/lib/supabaseClient.js needs no change whatsoever.
-  return { url: row.supabase_url, anonKey: row.supabase_anon_key, slug: row.slug };
+  // Public Neon endpoints. The browser uses these the way it used to use
+  // a project URL and anon key. A row that has not been filled in yet is
+  // not served — tenant-lookup.php then falls through to tenants.php.
+  if (!row.auth_url || !row.data_api_url) return null;
+  return { authUrl: row.auth_url, dataApiUrl: row.data_api_url, slug: row.slug };
 }
 
 export function registerTenantRoutes(app, pool) {
@@ -100,17 +102,18 @@ export function registerTenantRoutes(app, pool) {
 
     try {
       const { rows } = await pool.query(
-        `select slug, supabase_url, supabase_anon_key, status, grace_period_ends_at
+        `select slug, auth_url, data_api_url, status, grace_period_ends_at
            from tenant_registry
           where slug = $1`,
         [slug]
       );
 
       const row = rows[0];
-      if (!row || !isResolvable(row)) return res.status(404).json({ error: 'not found' });
+      const body = row && isResolvable(row) ? shape(row) : null;
+      if (!body) return res.status(404).json({ error: 'not found' });
 
       res.set('Cache-Control', 'public, max-age=60');
-      return res.json(shape(row));
+      return res.json(body);
     } catch (err) {
       // Log the slug, never the error's full context — pg errors can carry
       // query text and parameters into your logs.
@@ -132,7 +135,7 @@ export function registerTenantRoutes(app, pool) {
 
     try {
       const { rows } = await pool.query(
-        `select slug, supabase_url, supabase_anon_key, status, grace_period_ends_at
+        `select slug, auth_url, data_api_url, status, grace_period_ends_at
            from tenant_registry
           where $1 = any(domains)
           limit 2`,
@@ -148,10 +151,11 @@ export function registerTenantRoutes(app, pool) {
       }
 
       const row = rows[0];
-      if (!row || !isResolvable(row)) return res.status(404).json({ error: 'not found' });
+      const body = row && isResolvable(row) ? shape(row) : null;
+      if (!body) return res.status(404).json({ error: 'not found' });
 
       res.set('Cache-Control', 'public, max-age=60');
-      return res.json(shape(row));
+      return res.json(body);
     } catch (err) {
       console.error(`[tenant-lookup] domain query failed for "${domain}": ${err.message}`);
       return res.status(500).json({ error: 'lookup failed' });
