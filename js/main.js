@@ -14,7 +14,8 @@ import { renderGateApp } from './pages/gateApp.js';
 import { renderLogin } from './pages/login.js';
 import { renderSignup } from './pages/signup.js';
 import { renderResetPassword } from './pages/resetPassword.js';
-import { getSession, onAuthStateChange, signOut } from './lib/auth.js';
+import { getSession, onAuthStateChange, signOut, subscribeAppSession } from './lib/auth.js';
+import { isWakeStopped, wakingHtml, withWakeRetry } from './lib/wake.js';
 import { initBackend, isConfigured, tenantName } from './lib/backendClient.js';
 import { installErrorReporting } from './lib/errorReporting.js';
 import { syncQueuedScans } from './lib/offlineSync.js';
@@ -39,8 +40,11 @@ function mountShell(active) {
   `;
   attachTopNav(app, {
     onSignOut: async () => {
+      // signOut() clears the UI session before /login renders. Leaving
+      // currentSession set makes /login bounce back to the directory,
+      // and that query is sent with the anonymous token.
       await signOut();
-      navigate('/login');
+      if (getPath() !== '/login') navigate('/login');
     },
   });
   return document.getElementById('page-content');
@@ -268,6 +272,14 @@ async function init() {
   recoveryModeActive = isPasswordRecoveryLink();
   await initBackend();
   if (isConfigured) {
+    subscribeAppSession((session) => {
+      currentSession = session;
+      if (recoveryModeActive) {
+        navigate('/reset-password');
+        return;
+      }
+      redispatch();
+    });
     onAuthStateChange((session, event) => {
       currentSession = session;
       if (event === 'PASSWORD_RECOVERY') {
@@ -279,7 +291,18 @@ async function init() {
       }
       redispatch();
     });
-    currentSession = await getSession();
+    try {
+      const app = document.getElementById('app');
+      currentSession = await withWakeRetry(() => getSession(), {
+        onWaiting() {
+          if (app && !app.querySelector('.directory-header, .auth-card, .gate-app, .scan-page')) {
+            app.innerHTML = wakingHtml();
+          }
+        },
+      });
+    } catch (err) {
+      if (!isWakeStopped(err)) currentSession = null;
+    }
   }
   startRouter();
 

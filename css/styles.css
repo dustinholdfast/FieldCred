@@ -225,6 +225,22 @@ img { display: block; max-width: 100%; }
 .filter-chip.active {
   border-color: var(--brand); background: var(--brand-tint-bg); color: var(--brand); font-weight: 600;
 }
+.ai-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -8px 0 16px; }
+.ai-filter[hidden] { display: none; }
+.ai-chip {
+  display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 8px 4px 12px;
+  border: 1px solid var(--brand-tint-border); border-radius: 999px; background: var(--brand-tint-bg);
+  font-size: 13px; color: var(--brand);
+}
+.ai-chip input {
+  border: none; background: transparent; font: inherit; color: inherit; width: 9em; min-width: 4em; outline: none;
+}
+.ai-chip-x, .ai-clear {
+  border: none; background: transparent; color: var(--brand); cursor: pointer; font: inherit; font-weight: 600;
+}
+.ai-filter-error { color: var(--expired-text); font-size: 13px; }
+.ai-filter-note { color: var(--text-secondary); font-size: 13px; }
+.ai-count { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 
 .worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 980px) { .worker-grid { grid-template-columns: repeat(2, 1fr); } }

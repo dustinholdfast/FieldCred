@@ -1,4 +1,5 @@
 import { signIn, requestPasswordReset } from '../lib/auth.js';
+import { isAuthOrPermissionError, warmDatabase, withWakeRetry } from '../lib/wake.js';
 import { navigate } from '../lib/router.js';
 import { isConfigured, tenantSlug, tenantName, usedFallback } from '../lib/backendClient.js';
 import { setTenantOverride } from '../lib/tenant.js';
@@ -39,6 +40,7 @@ async function lookupTenantByEmail(email) {
 }
 
 export function renderLogin(container, params, query) {
+  warmDatabase();
   const next = query.get('next') || '/directory';
   const fallbackWarning =
     usedFallback && tenantSlug && tenantSlug !== 'default'
@@ -170,7 +172,11 @@ export function renderLogin(container, params, query) {
     }
 
     try {
-      await signIn(email, password);
+      await withWakeRetry(() => signIn(email, password), {
+        onWaiting() {
+          submitBtn.textContent = 'Waking up the database…';
+        },
+      });
       try {
         sessionStorage.removeItem(PENDING_EMAIL_KEY);
       } catch {
@@ -178,7 +184,7 @@ export function renderLogin(container, params, query) {
       }
       navigate(next);
     } catch (err) {
-      showError(err.message || 'Could not sign in.');
+      showError(isAuthOrPermissionError(err) ? (err.message || 'Could not sign in.') : "The database didn't respond. Try again.");
       submitBtn.disabled = false;
       submitBtn.textContent = 'Sign in';
     }

@@ -7,6 +7,7 @@ import { shieldLogo, logoImage } from '../components/logo.js';
 import { avatarHtml } from '../components/avatar.js';
 import { tenantName, tenantLogoUrl, tenantSlug } from '../lib/backendClient.js';
 import { isStale } from '../lib/offlineCache.js';
+import { WAKING_TITLE } from '../lib/wake.js';
 
 // Offline fallback banner — shown when this record or the gate site came
 // from the local cache (js/lib/offlineCache.js) instead of a live fetch.
@@ -113,12 +114,21 @@ function downloadVCard(w) {
 
 export async function renderPublicRecord(container, params, query) {
   container.innerHTML = `<div class="public-page"><div class="public-unavailable">Loading…</div></div>`;
+  const renderToken = {};
+  container.__recordRender = renderToken;
+  const stillHere = () => container.__recordRender === renderToken;
+  const onWaiting = () => {
+    if (!stillHere()) return;
+    container.innerHTML = `<div class="public-page"><div class="public-unavailable"><div class="empty-state-title">${WAKING_TITLE}</div><div>This usually takes a few seconds after it's been idle.</div></div></div>`;
+  };
 
   // resolveWorker() owns the live-fetch / offline-cache fallback and the
   // "no such worker" vs "no signal" distinction — see js/lib/gateVerdict.js.
   // Both are needed here: the first is fail-closed, the second is a reason to
-  // reach for the cache rather than give up.
-  const resolved = await resolveWorker(params.slug);
+  // reach for the cache rather than give up. The fetch inside retries while
+  // the compute wakes; a permission error does not.
+  const resolved = await resolveWorker(params.slug, { onWaiting });
+  if (!stillHere()) return;
   const w = resolved.worker;
   const workerOffline = resolved.fromCache;
   const workerCachedAt = resolved.cachedAt;
@@ -140,10 +150,14 @@ export async function renderPublicRecord(container, params, query) {
                   : 'The link may have expired, been turned off, or removed.'
               }
             </div>
+            ${noSignal ? '<div style="margin-top:14px;"><button class="btn btn-primary" type="button" id="public-retry">Retry</button></div>' : ''}
           </div>
         </div>
       </div>
     `;
+    container.querySelector('#public-retry')?.addEventListener('click', () => {
+      renderPublicRecord(container, params, query);
+    });
     return;
   }
 
@@ -163,7 +177,7 @@ export async function renderPublicRecord(container, params, query) {
   let siteCachedAt = null;
   if (gateSlug) {
     gateActive = true;
-    const resolvedSite = await resolveSite(gateSlug);
+  const resolvedSite = await resolveSite(gateSlug, { onWaiting });
     const site = resolvedSite.site;
     siteOffline = resolvedSite.fromCache;
     siteCachedAt = resolvedSite.cachedAt;

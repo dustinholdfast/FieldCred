@@ -1,12 +1,14 @@
 import { TENANTS } from './tenants.js';
 import { enforceRateLimit } from './rate-limit.js';
 import { handleFile } from './files.js';
+import { DIRECTORY_SEARCH_LIMIT, directorySearchResult } from './directorySearch.js';
 
 // Same caps as the PHP call sites.
 export const LIMITS = {
   tenantLookup: { bucket: 'tenant-lookup', max: 30, windowSeconds: 60 },
   tenantDomain: { bucket: 'tenant-domain-lookup', max: 30, windowSeconds: 60 },
   signup: { bucket: 'signup', max: 5, windowSeconds: 3600 },
+  directorySearch: DIRECTORY_SEARCH_LIMIT,
 };
 
 const SECURITY_HEADERS = {
@@ -253,6 +255,18 @@ export async function handleRequest(request, env = {}, deps = {}) {
   if (path === '/file.php') {
     const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
     return handleFile(request, tenants, fetchImpl, nowMs);
+  }
+  if (path === '/directory-search.php') {
+    const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
+    const result = await directorySearchResult(request, env, {
+      fetchImpl,
+      now,
+      nowMs,
+      tenants,
+      today: deps.today,
+      sleep: deps.sleep,
+    });
+    return json(result.status, result.body, result.headers);
   }
 
   if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {

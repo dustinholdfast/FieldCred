@@ -123,7 +123,7 @@ test('tenant lookup returns the demo registry entry', async () => {
   assert.equal(res.headers.get('cache-control'), 'no-store');
   assert.equal(res.headers.get('content-type'), 'application/json');
   assert.deepEqual(res.body, {
-    name: 'FieldCred Demo',
+    name: 'Demo',
     authUrl: 'https://ep-falling-dream-b4s5gk7v.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
     dataApiUrl: 'https://ep-falling-dream-b4s5gk7v.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
   });
@@ -189,6 +189,20 @@ test('domain lookup validates email and returns one tenant', async () => {
     dataApiUrl: 'https://ep-example.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
   });
   assert.equal(findTenantByDomainIn(TENANTS, 'acmecorp.com'), null);
+});
+
+test('dustin@fieldcred.co resolves to the demo tenant', async () => {
+  resetRateLimits();
+  const res = await readJson(await handleRequest(req('/tenant-lookup-by-domain.php?email=dustin@fieldcred.co', { ip: '203.0.113.31' })));
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(res.body, {
+    slug: 'demo',
+    name: 'Demo',
+    authUrl: 'https://ep-falling-dream-b4s5gk7v.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth',
+    dataApiUrl: 'https://ep-falling-dream-b4s5gk7v.apirest.c-6.us-east-2.aws.neon.tech/neondb/rest/v1',
+  });
+  assert.equal('domains' in res.body, false);
 });
 
 test('signup notify keeps the PHP response shapes', async () => {

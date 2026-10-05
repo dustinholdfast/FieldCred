@@ -5,6 +5,7 @@ import { shieldLogo } from '../components/logo.js';
 import { tenantSlug } from '../lib/backendClient.js';
 import { getCachedSite } from '../lib/offlineCache.js';
 import { store } from '../lib/state.js';
+import { isAuthOrPermissionError, isWakeStopped, warmDatabase, WAKING_TITLE, withWakeRetry } from '../lib/wake.js';
 
 // In-app gate scanner. Public route, no auth — same rationale as /r/:slug and
 // /gate/:slug: a gate device is a shared kiosk that nobody signs in to, and
@@ -32,13 +33,14 @@ function readGateSlug() {
 // Best-effort label for the site this device checks against. Tries the live
 // record, falls back to the offline cache, and finally to the raw slug — this
 // is a header caption, so it must never block or break the scanner.
-async function gateSiteLabel(slug) {
+async function gateSiteLabel(slug, { onWaiting } = {}) {
   if (!slug) return null;
   try {
-    const site = await store.getPublicSite(slug);
+    const site = await withWakeRetry(() => store.getPublicSite(slug), { onWaiting });
     if (site?.name) return site.name;
-  } catch {
-    // no signal — fall through to cache
+  } catch (err) {
+    if (isWakeStopped(err)) return null;
+    if (!isAuthOrPermissionError(err)) throw err;
   }
   try {
     const cached = await getCachedSite(slug);
@@ -111,6 +113,7 @@ function buzz(pattern) {
 }
 
 export async function renderScan(container) {
+  warmDatabase();
   const gateSlug = readGateSlug();
   container.innerHTML = shellHtml({ gateLabel: gateSlug ? '…' : null });
 
@@ -121,9 +124,27 @@ export async function renderScan(container) {
   // immediately rather than waiting on a network round trip at a gate with
   // bad signal.
   if (gateSlug) {
-    gateSiteLabel(gateSlug).then((label) => {
-      const name = container.querySelector('.scan-site-name');
+    const name = container.querySelector('.scan-site-name');
+    gateSiteLabel(gateSlug, {
+      onWaiting() {
+        if (name) name.textContent = WAKING_TITLE;
+      },
+    }).then((label) => {
       if (name && label) name.textContent = label;
+    }).catch(() => {
+      if (name) name.textContent = gateSlug;
+      statusEl.className = 'scan-status scan-status-error';
+      statusEl.replaceChildren();
+      const text = document.createElement('span');
+      text.textContent = "Couldn't reach the database.";
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'btn btn-primary';
+      retry.id = 'scan-wake-retry';
+      retry.textContent = 'Retry';
+      retry.style.marginLeft = '10px';
+      retry.addEventListener('click', () => renderScan(container));
+      statusEl.append(text, retry);
     });
   }
 

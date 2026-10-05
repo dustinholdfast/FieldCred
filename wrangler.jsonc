@@ -2,6 +2,13 @@
   // Deploy to the workers.dev hostname only.
   // Do not add `routes`, a zone, or a custom domain for fieldcred.co here.
   //   npx wrangler secret put RESEND_API_KEY
+  // Plain-English directory search (POST /directory-search.php) calls
+  // Google Gemini (Generative Language API) from this Worker.
+  // GEMINI_API_KEY is required. When it is missing the endpoint returns
+  // {"enabled":false} and the directory keeps plain text search.
+  // Optional GEMINI_MODEL overrides the default model id (gemini-3.5-flash).
+  //   npx wrangler secret put GEMINI_API_KEY
+  //   npx wrangler secret put GEMINI_MODEL
   //   npx wrangler deploy
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "fieldcred",
@@ -43,7 +50,8 @@
       "/file.php",
       "/tenants.php",
       "/signup-config.php",
-      "/rate-limit.php"
+      "/rate-limit.php",
+      "/directory-search.php"
     ]
   },
   "vars": {

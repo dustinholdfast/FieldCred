@@ -34,6 +34,7 @@ import { tenantSlug } from '../lib/backendClient.js';
 import { getSession } from '../lib/auth.js';
 import { isPermissionError, roleFromSession, roleLabel } from '../lib/roles.js';
 import { store } from '../lib/state.js';
+import { warmDatabase, WAKING_TITLE, withWakeRetry } from '../lib/wake.js';
 import { buildVerdict, resolveSite, shortExpiry, VERDICT } from '../lib/gateVerdict.js';
 import {
   MODE_GUARD,
@@ -562,6 +563,7 @@ let activeDispose = null;
 
 export async function renderGateApp(container, _params, query) {
   activeDispose?.();
+  warmDatabase();
 
   const ctx = {
     screen: 'guardHome',
@@ -668,7 +670,12 @@ export async function renderGateApp(container, _params, query) {
     ctx.pairedSlug = getPairedSlug();
     ctx.mode = getMode();
     if (ctx.pairedSlug) {
-      const resolved = await resolveSite(ctx.pairedSlug);
+      const resolved = await resolveSite(ctx.pairedSlug, {
+        onWaiting() {
+          const boot = container.querySelector('.gate-booting');
+          if (boot) boot.textContent = WAKING_TITLE;
+        },
+      });
       ctx.site = resolved.site;
       ctx.offline = resolved.noSignal || resolved.fromCache || !navigator.onLine;
       ctx.cachedAt = resolved.cachedAt;
@@ -703,15 +710,21 @@ export async function renderGateApp(container, _params, query) {
       return;
     }
     try {
-      ctx.scans = await store.siteScanLog(ctx.site.id);
-    } catch {
+      ctx.scans = await withWakeRetry(() => store.siteScanLog(ctx.site.id), {
+        onWaiting() {
+          ctx.logError = WAKING_TITLE;
+          if (!disposed && ctx.screen === 'supHome') render();
+        },
+      });
+      ctx.logError = '';
+    } catch (err) {
       ctx.scans = [];
       // The one failure worth naming specifically: the supervisor's session
       // lapsed. RLS grants gate_scans to authenticated only, so this reads as
       // an empty log rather than an error unless we say what happened.
-      ctx.logError = ctx.session
-        ? "Couldn't load the scan log — no connection to the server."
-        : 'Sign in again to read this site\'s scan log.';
+      ctx.logError = isPermissionError(err) || !ctx.session
+        ? 'Sign in again to read this site\'s scan log.'
+        : "Couldn't load the scan log. The database didn't respond.";
       return;
     }
     // "Today" is the device's local day, which is the same day the guard is
@@ -738,11 +751,17 @@ export async function renderGateApp(container, _params, query) {
       return;
     }
     try {
-      const [sites, requiredRows, types] = await Promise.all([
+      const [sites, requiredRows, types] = await withWakeRetry(() => Promise.all([
         store.sites(),
         store.allSiteRequiredTypes(),
         store.credentialTypes(),
-      ]);
+      ]), {
+        onWaiting() {
+          ctx.pairingError = WAKING_TITLE;
+          if (!disposed && ctx.screen === 'pairing') render();
+        },
+      });
+      ctx.pairingError = '';
       const typeName = new Map(types.map((t) => [t.id, t.name]));
       const bySite = new Map();
       for (const row of requiredRows) {
@@ -752,9 +771,11 @@ export async function renderGateApp(container, _params, query) {
       ctx.pairingSites = sites
         .filter((s) => s.active)
         .map((s) => ({ ...s, requiredTypeNames: (bySite.get(s.id) || []).sort() }));
-    } catch {
+    } catch (err) {
       ctx.pairingSites = [];
-      ctx.pairingError = "Couldn't load the site list. At the gate, scan the site QR instead.";
+      ctx.pairingError = isPermissionError(err)
+        ? 'Sign in again to choose a site from the list.'
+        : "Couldn't load the site list. At the gate, scan the site QR instead.";
     }
   }
 
@@ -987,7 +1008,13 @@ export async function renderGateApp(container, _params, query) {
       return;
     }
 
-    const verdict = await buildVerdict(ctx.pairedSlug, workerSlug, { via });
+    const verdict = await buildVerdict(ctx.pairedSlug, workerSlug, {
+      via,
+      onWaiting() {
+        const el = container.querySelector('#gate-hint');
+        if (el) el.textContent = WAKING_TITLE;
+      },
+    });
     buzz(verdict.kind === VERDICT.CLEARED ? BUZZ.cleared : verdict.kind === VERDICT.BLOCKED ? BUZZ.blocked : BUZZ.unknown);
 
     ctx.verdict = verdict;
@@ -1031,19 +1058,26 @@ export async function renderGateApp(container, _params, query) {
     ctx.lookupBusy = true;
     render();
     try {
-      // In supervisor mode the full directory is readable and more useful
-      // (a worker not yet on this site's roster still needs checking); in
-      // guard mode only this site's roster is anon-reachable at all.
-      if (ctx.session) {
-        const all = await store.getAll();
-        const q = term.toLowerCase();
-        ctx.lookupResults = all
-          .filter((w) => w.publicSlug && (w.name.toLowerCase().includes(q) || (w.title || '').toLowerCase().includes(q)))
-          .slice(0, 25)
-          .map((w) => ({ publicSlug: w.publicSlug, name: w.name, title: w.title, department: w.department }));
-      } else {
-        ctx.lookupResults = await store.searchSiteRoster(ctx.pairedSlug, term);
-      }
+      await withWakeRetry(async () => {
+        // In supervisor mode the full directory is readable and more useful
+        // (a worker not yet on this site's roster still needs checking); in
+        // guard mode only this site's roster is anon-reachable at all.
+        if (ctx.session) {
+          const all = await store.getAll();
+          const q = term.toLowerCase();
+          ctx.lookupResults = all
+            .filter((w) => w.publicSlug && (w.name.toLowerCase().includes(q) || (w.title || '').toLowerCase().includes(q)))
+            .slice(0, 25)
+            .map((w) => ({ publicSlug: w.publicSlug, name: w.name, title: w.title, department: w.department }));
+        } else {
+          ctx.lookupResults = await store.searchSiteRoster(ctx.pairedSlug, term);
+        }
+      }, {
+        onWaiting() {
+          const el = container.querySelector('.gate-lookup-empty');
+          if (el) el.textContent = WAKING_TITLE;
+        },
+      });
     } catch (err) {
       ctx.lookupResults = [];
       // Three distinct failure shapes need three distinct messages — see

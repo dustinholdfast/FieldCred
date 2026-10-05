@@ -24,6 +24,7 @@
 import { evaluateClearance } from './clearance.js';
 import { certStatus, RENEWAL_WINDOW_DAYS } from './status.js';
 import { store } from './state.js';
+import { withWakeRetry } from './wake.js';
 import {
   cacheWorkerRecord,
   getCachedWorkerRecord,
@@ -154,9 +155,9 @@ export function deriveVerdict(worker, site, { windowDays = RENEWAL_WINDOW_DAYS, 
 // badge is genuinely unknown) from "no signal" (fetch threw), because those
 // two mean completely different things at a gate: the first is an
 // UNRECOGNIZED BADGE verdict, the second is a reason to reach for the cache.
-export async function resolveWorker(slug) {
+export async function resolveWorker(slug, { onWaiting } = {}) {
   try {
-    const worker = await store.getBySlug(slug);
+    const worker = await withWakeRetry(() => store.getBySlug(slug), { onWaiting });
     // Only cache the clean-success case — never a null. Caching "not found"
     // would let a worker whose sharing was since turned off keep resolving
     // from this device's cache. (Same reasoning as publicRecord.js.)
@@ -173,10 +174,10 @@ export async function resolveWorker(slug) {
   }
 }
 
-export async function resolveSite(slug) {
+export async function resolveSite(slug, { onWaiting } = {}) {
   if (!slug) return { site: null, fromCache: false, cachedAt: null, noSignal: false };
   try {
-    const site = await store.getPublicSite(slug);
+    const site = await withWakeRetry(() => store.getPublicSite(slug), { onWaiting });
     if (site) {
       try { await cacheSite(slug, site); } catch {}
     }
@@ -227,8 +228,11 @@ export async function logGateScan(siteSlug, workerSlug) {
  * Set `log:false` for a check that must NOT be written to the audit log; the
  * only such case today is a badge from another tenant (see gateApp.js).
  */
-export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date() } = {}) {
-  const [w, s] = await Promise.all([resolveWorker(workerSlug), resolveSite(siteSlug)]);
+export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date(), onWaiting } = {}) {
+  const [w, s] = await Promise.all([
+    resolveWorker(workerSlug, { onWaiting }),
+    resolveSite(siteSlug, { onWaiting }),
+  ]);
   const verdict = deriveVerdict(w.worker, s.site, { today });
 
   // The older of the two cache stamps is the honest "as of" bound for what's
