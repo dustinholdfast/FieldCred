@@ -5,23 +5,25 @@
 // through the Data API with the caller's own Neon Auth JWT, so RLS still
 // decides which workers come back.
 //
-// NEON_AI_GATEWAY_TOKEN and NEON_AI_GATEWAY_BASE_URL are Worker secrets.
-// When either is missing this returns { enabled: false } and the directory
-// keeps plain text search. Optional NEON_AI_GATEWAY_MODEL overrides the
-// default model id.
+// GEMINI_API_KEY is a Worker secret. When it is missing this returns
+// { enabled: false } and the directory keeps plain text search.
+// Optional GEMINI_MODEL overrides the default model id; it is not required.
 
 import { enforceRateLimit } from './rate-limit.js';
 import { findTenantIn } from './endpoints.js';
 import {
   QUESTION_MAX,
   FilterRejected,
+  filterResponseSchema,
   modelMessages,
   validateFilter,
 } from '../js/lib/directoryFilter.js';
 
 export const DIRECTORY_SEARCH_LIMIT = { bucket: 'directory-search', max: 20, windowSeconds: 60 };
 const STAFF_ROLES = new Set(['admin', 'safety', 'gate']);
-const DEFAULT_MODEL = 'gemini-3-flash';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 
 function decodeJwtPayload(token) {
   const parts = String(token).split('.');
@@ -88,23 +90,31 @@ async function requireStaff(request, dataApiUrl, fetchImpl, nowMs) {
   return { sub: payload.sub };
 }
 
-function gatewayEnv(env) {
-  const token = String(env.NEON_AI_GATEWAY_TOKEN || '').trim();
-  const baseUrl = String(env.NEON_AI_GATEWAY_BASE_URL || '').trim().replace(/\/+$/, '');
-  const model = String(env.NEON_AI_GATEWAY_MODEL || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
-  return { token, baseUrl, model };
+function geminiConfig(env) {
+  const apiKey = String(env.GEMINI_API_KEY || '').trim();
+  const requested = String(env.GEMINI_MODEL || '').trim();
+  const model = MODEL_ID.test(requested) ? requested : DEFAULT_MODEL;
+  return { apiKey, model };
 }
 
-function parseModelContent(payload) {
-  const content = payload?.choices?.[0]?.message?.content;
-  let text = '';
-  if (typeof content === 'string') text = content;
-  else if (Array.isArray(content)) {
-    text = content.map((part) => (typeof part === 'string' ? part : (part?.text || ''))).join('');
-  } else {
-    return null;
-  }
-  text = text.trim();
+function geminiRequestBody(question) {
+  const messages = modelMessages(question);
+  return {
+    systemInstruction: { parts: [{ text: messages[0].content }] },
+    contents: [{ role: 'user', parts: [{ text: messages[1].content }] }],
+    generationConfig: {
+      temperature: 0,
+      responseMimeType: 'application/json',
+      responseSchema: filterResponseSchema(),
+    },
+  };
+}
+
+function parseGeminiContent(payload) {
+  const parts = payload?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return null;
+  let text = parts.map((part) => (typeof part?.text === 'string' ? part.text : '')).join('').trim();
+  if (!text) return null;
   if (text.startsWith('```')) {
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
   }
@@ -169,30 +179,26 @@ export async function directorySearchResult(request, env = {}, deps = {}) {
     };
   }
 
-  const gateway = gatewayEnv(env);
-  if (!gateway.token || !gateway.baseUrl) return { status: 200, body: { enabled: false } };
+  const gemini = geminiConfig(env);
+  if (!gemini.apiKey) return { status: 200, body: { enabled: false } };
 
   let response;
   try {
-    response = await fetchImpl(`${gateway.baseUrl}/v1/chat/completions`, {
+    response = await fetchImpl(`${GEMINI_URL}/${encodeURIComponent(gemini.model)}:generateContent`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${gateway.token}`,
         'Content-Type': 'application/json',
+        'x-goog-api-key': gemini.apiKey,
       },
-      body: JSON.stringify({
-        model: gateway.model,
-        temperature: 0,
-        messages: modelMessages(question),
-      }),
+      body: JSON.stringify(geminiRequestBody(question)),
       signal: AbortSignal.timeout(20000),
     });
   } catch {
-    console.error('[directory-search] gateway failed — http: 0');
+    console.error('[directory-search] gemini failed — http: 0');
     return { status: 502, body: { error: 'Search is unavailable right now.' } };
   }
   if (!response.ok) {
-    console.error(`[directory-search] gateway failed — http: ${response.status}`);
+    console.error(`[directory-search] gemini failed — http: ${response.status}`);
     return { status: 502, body: { error: 'Search is unavailable right now.' } };
   }
 
@@ -203,7 +209,7 @@ export async function directorySearchResult(request, env = {}, deps = {}) {
     console.error('[directory-search] filter rejected');
     return { status: 422, body: { error: 'That question could not be turned into a safe filter.' } };
   }
-  const parsed = parseModelContent(payload);
+  const parsed = parseGeminiContent(payload);
   if (!parsed) {
     console.error('[directory-search] filter rejected');
     return { status: 422, body: { error: 'That question could not be turned into a safe filter.' } };

@@ -75,6 +75,31 @@ export function modelMessages(question) {
   ];
 }
 
+// JSON schema for Gemini generateContent responseSchema. The enum is the
+// allowlist; validateFilter still rejects anything that slips past it.
+export function filterResponseSchema() {
+  const fields = Object.keys(FIELDS);
+  const ops = [...new Set(Object.values(FIELDS).flatMap((spec) => spec.ops))];
+  return {
+    type: 'object',
+    properties: {
+      conditions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            field: { type: 'string', enum: fields },
+            op: { type: 'string', enum: ops },
+            value: { type: 'string' },
+          },
+          required: ['field', 'op', 'value'],
+        },
+      },
+    },
+    required: ['conditions'],
+  };
+}
+
 export function looksLikeQuestion(text) {
   const q = String(text || '').trim();
   if (q.length < 12 || q.length > QUESTION_MAX) return false;

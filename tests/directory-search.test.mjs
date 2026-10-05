@@ -29,17 +29,16 @@ function req(body, { token, method = 'POST' } = {}) {
   });
 }
 
-function gatewayEnv(overrides = {}) {
+function geminiEnv(overrides = {}) {
   return {
-    NEON_AI_GATEWAY_TOKEN: 'test-gateway-token',
-    NEON_AI_GATEWAY_BASE_URL: 'https://gateway.example.test',
+    GEMINI_API_KEY: 'test-gemini-key',
     ...overrides,
   };
 }
 
-function chat(content) {
+function geminiResponse(content) {
   return new Response(JSON.stringify({
-    choices: [{ message: { content: JSON.stringify(content) } }],
+    candidates: [{ content: { parts: [{ text: JSON.stringify(content) }] } }],
   }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
@@ -50,13 +49,13 @@ function fetchImplFor(model, { role = 'admin', roleStatus = 200 } = {}) {
     if (String(url).includes('/rpc/current_fc_role')) {
       return new Response(JSON.stringify(role), { status: roleStatus, headers: { 'Content-Type': 'application/json' } });
     }
-    if (String(url).includes('/v1/chat/completions')) return chat(model);
+    if (String(url).includes(':generateContent')) return geminiResponse(model);
     return new Response('unexpected', { status: 500 });
   };
   return { fetchImpl, calls };
 }
 
-async function search(question, { token = staffJwt(), env = gatewayEnv(), model, role, roleStatus, sub } = {}) {
+async function search(question, { token = staffJwt(), env = geminiEnv(), model, role, roleStatus, sub } = {}) {
   const tokenToUse = sub ? staffJwt(sub) : token;
   const { fetchImpl, calls } = fetchImplFor(model, { role, roleStatus });
   const response = await handleRequest(req({ tenant: 'demo', question }, { token: tokenToUse }), env, {
@@ -69,10 +68,10 @@ async function search(question, { token = staffJwt(), env = gatewayEnv(), model,
   return { status: response.status, body, calls };
 }
 
-test('a signed-out request is 401 and does not call the gateway', async () => {
+test('a signed-out request is 401 and does not call Gemini', async () => {
   resetRateLimits();
   const { fetchImpl, calls } = fetchImplFor({});
-  const response = await handleRequest(req({ tenant: 'demo', question: "who's cleared for confined space at North site" }), gatewayEnv(), {
+  const response = await handleRequest(req({ tenant: 'demo', question: "who's cleared for confined space at North site" }), geminiEnv(), {
     fetchImpl,
     now: () => NOW,
     nowMs: () => NOW_MS,
@@ -86,7 +85,7 @@ test('an anonymous token and a rejected session are 401', async () => {
   resetRateLimits();
   const anon = jwt({ sub: 'anon', role: 'anonymous', exp: NOW + 3600 });
   const { fetchImpl, calls } = fetchImplFor({});
-  const response = await handleRequest(req({ tenant: 'demo', question: 'whose OSHA 30 expires this month' }, { token: anon }), gatewayEnv(), {
+  const response = await handleRequest(req({ tenant: 'demo', question: 'whose OSHA 30 expires this month' }, { token: anon }), geminiEnv(), {
     fetchImpl,
     now: () => NOW,
     nowMs: () => NOW_MS,
@@ -96,21 +95,21 @@ test('an anonymous token and a rejected session are 401', async () => {
 
   const rejected = await search('whose OSHA 30 expires this month', { roleStatus: 401, model: {} });
   assert.equal(rejected.status, 401);
-  assert.equal(rejected.calls.some((call) => call.url.includes('/v1/chat/completions')), false);
+  assert.equal(rejected.calls.some((call) => call.url.includes(':generateContent')), false);
 });
 
-test('with the gateway secret unset the endpoint says the feature is off', async () => {
+test('with the Gemini key unset the endpoint says the feature is off', async () => {
   resetRateLimits();
   for (const env of [
     {},
-    { NEON_AI_GATEWAY_BASE_URL: 'https://gateway.example.test' },
-    { NEON_AI_GATEWAY_TOKEN: 'test-gateway-token' },
-    { NEON_AI_GATEWAY_TOKEN: '   ', NEON_AI_GATEWAY_BASE_URL: 'https://gateway.example.test' },
+    { GEMINI_MODEL: 'gemini-2.0-flash' },
+    { GEMINI_API_KEY: '   ' },
+    { NEON_AI_GATEWAY_TOKEN: 'leftover', NEON_AI_GATEWAY_BASE_URL: 'https://gateway.example.test' },
   ]) {
     const result = await search("who's cleared for confined space at North site", { env, model: {} });
     assert.equal(result.status, 200);
     assert.deepEqual(result.body, { enabled: false });
-    assert.equal(result.calls.some((call) => call.url.includes('/v1/chat/completions')), false);
+    assert.equal(result.calls.some((call) => call.url.includes(':generateContent')), false);
   }
 });
 
@@ -127,11 +126,16 @@ test('good questions become the expected filters and the model never sees rows',
   assert.equal(confined.status, 200);
   assert.equal(confined.body.enabled, true);
   assert.deepEqual(confined.body.filter, confinedModel);
-  const gatewayCall = confined.calls.find((call) => call.url === 'https://gateway.example.test/v1/chat/completions');
-  const sent = JSON.parse(gatewayCall.init.body);
-  assert.equal(sent.messages[1].content, "who's cleared for confined space at North site");
+  const geminiCall = confined.calls.find((call) => call.url.includes(':generateContent'));
+  assert.equal(geminiCall.url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+  assert.equal(geminiCall.url.includes('test-gemini-key'), false);
+  const sent = JSON.parse(geminiCall.init.body);
+  assert.equal(sent.contents[0].parts[0].text, "who's cleared for confined space at North site");
+  assert.equal(sent.generationConfig.responseMimeType, 'application/json');
+  assert.equal(sent.generationConfig.responseSchema.required.includes('conditions'), true);
+  assert.equal(sent.generationConfig.responseSchema.properties.conditions.items.properties.field.enum.includes('workers.ssn'), false);
   assert.equal(JSON.stringify(sent).includes('Ada Lopez'), false);
-  assert.equal(gatewayCall.init.headers.Authorization, 'Bearer test-gateway-token');
+  assert.equal(geminiCall.init.headers['x-goog-api-key'], 'test-gemini-key');
 
   const osha = await search('whose OSHA 30 expires this month', {
     sub: 'osha-user',
@@ -145,6 +149,31 @@ test('good questions become the expected filters and the model never sees rows',
   assert.equal(osha.status, 200);
   assert.equal(osha.body.filter.conditions[1].from, '2026-10-01');
   assert.equal(osha.body.filter.conditions[1].to, '2026-10-31');
+});
+
+test('GEMINI_MODEL selects the generateContent model and a bad id is ignored', async () => {
+  resetRateLimits();
+  const model = { conditions: [{ field: 'workers.name', op: 'contains', value: 'Ada' }] };
+  const custom = await search('whose OSHA 30 expires this month', {
+    sub: 'model-user',
+    env: geminiEnv({ GEMINI_MODEL: 'gemini-2.0-flash' }),
+    model,
+  });
+  assert.equal(custom.status, 200);
+  assert.equal(
+    custom.calls.some((call) => call.url.endsWith('/models/gemini-2.0-flash:generateContent')),
+    true,
+  );
+  const bad = await search('whose OSHA 30 expires this month', {
+    sub: 'model-user-2',
+    env: geminiEnv({ GEMINI_MODEL: '../other-host' }),
+    model,
+  });
+  assert.equal(bad.status, 200);
+  assert.equal(
+    bad.calls.some((call) => call.url.endsWith('/models/gemini-3.8-flash:generateContent')),
+    true,
+  );
 });
 
 test('prompt-injection and off-allowlist model output is rejected', async () => {
@@ -186,13 +215,17 @@ test('directory search is rate limited per signed-in user', async () => {
 test('the question is not logged with worker data', () => {
   const source = readFileSync(new URL('../worker/directorySearch.js', import.meta.url), 'utf8');
   assert.equal(source.includes('console.log'), false);
-  assert.equal(source.includes('NEON_AI_GATEWAY_TOKEN'), true);
+  assert.equal(source.includes('GEMINI_API_KEY'), true);
+  assert.equal(source.includes('NEON_AI_GATEWAY'), false);
   assert.equal(/console\.error\([^)]*question/.test(source), false);
   const page = readFileSync(new URL('../js/pages/directory.js', import.meta.url), 'utf8');
   assert.equal(page.includes('directory-search.php'), true);
   assert.equal(page.includes('withWakeRetry'), true);
   const wrangler = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   assert.equal(wrangler.includes('/directory-search.php'), true);
-  assert.equal(wrangler.includes('NEON_AI_GATEWAY_TOKEN'), true);
+  assert.equal(wrangler.includes('GEMINI_API_KEY'), true);
+  assert.equal(wrangler.includes('GEMINI_MODEL'), true);
+  assert.equal(wrangler.includes('NEON_AI_GATEWAY'), false);
   assert.equal(/nt_live_/.test(wrangler), false);
+  assert.equal(/AIza[0-9A-Za-z_-]{10,}/.test(wrangler), false);
 });
