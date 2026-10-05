@@ -13,7 +13,9 @@ import { isPermissionError, roleCan } from '../lib/roles.js';
 import { isWakeStopped, wakingHtml, withWakeRetry } from '../lib/wake.js';
 import {
   QUESTION_MAX,
+  applyDirectoryFilter,
   chipParts,
+  countAnswer,
   filterNeedsRoster,
   looksLikeQuestion,
   validateFilter,
@@ -131,6 +133,8 @@ export async function renderDirectory(container, params, query) {
     askAvailable: true,
     askPending: false,
     filter: null,
+    mode: null,
+    label: '',
     roster: null,
     aiError: '',
     aiNote: '',
@@ -215,9 +219,16 @@ export async function renderDirectory(container, params, query) {
     return true;
   }
 
+  function currentCount() {
+    if (state.mode !== 'count' || !state.filter) return null;
+    return applyDirectoryFilter(allWorkers, state.filter, state.roster || EMPTY_ROSTER, new Date()).length;
+  }
+
   function aiSignature() {
     return JSON.stringify({
       filter: state.filter,
+      mode: state.mode,
+      count: currentCount(),
       error: state.aiError,
       note: state.aiNote,
       pending: state.askPending,
@@ -232,7 +243,11 @@ export async function renderDirectory(container, params, query) {
     if (state.askPending) bits.push('<span class="ai-filter-note">Reading your question…</span>');
     if (state.aiNote) bits.push(`<span class="ai-filter-note">${escapeHtml(state.aiNote)}</span>`);
     if (state.aiError) bits.push(`<span class="ai-filter-error" role="alert">${escapeHtml(state.aiError)}</span>`);
-    if (state.filter) {
+    if (!state.askPending && state.mode === 'count' && state.filter) {
+      const label = state.filter.conditions.length ? 'match' : 'workers';
+      bits.push(`<span class="ai-count" role="status">${escapeHtml(countAnswer(currentCount(), label))}</span>`);
+    }
+    if (state.filter && state.filter.conditions.length) {
       state.filter.conditions.forEach((condition, index) => {
         const parts = chipParts(condition);
         bits.push(
@@ -243,6 +258,8 @@ export async function renderDirectory(container, params, query) {
           + `</span>`,
         );
       });
+    }
+    if (state.filter && (state.mode === 'count' || state.filter.conditions.length)) {
       bits.push('<button type="button" class="ai-clear" id="ai-clear-all">Clear</button>');
     }
     const show = bits.length > 0;
@@ -295,6 +312,8 @@ export async function renderDirectory(container, params, query) {
     state.holdPlain = true;
     state.ask = false;
     state.filter = null;
+    state.mode = null;
+    state.label = '';
     state.aiError = '';
     state.aiNote = '';
     state.askPending = false;
@@ -351,6 +370,8 @@ export async function renderDirectory(container, params, query) {
       state.askPending = false;
       if (!state.holdPlain) {
         state.filter = null;
+        state.mode = null;
+        state.label = '';
         state.aiError = '';
         state.aiNote = '';
       }
@@ -360,6 +381,8 @@ export async function renderDirectory(container, params, query) {
     if (q.length > QUESTION_MAX) {
       state.askPending = false;
       state.filter = null;
+      state.mode = null;
+      state.label = '';
       state.aiNote = '';
       state.aiError = 'That question is too long.';
       renderGrid();
@@ -368,6 +391,8 @@ export async function renderDirectory(container, params, query) {
     if (state.askAvailable === false) {
       state.askPending = false;
       state.filter = null;
+      state.mode = null;
+      state.label = '';
       state.aiError = '';
       state.aiNote = 'Ask is off, so this stays a plain text search.';
       renderGrid();
@@ -439,18 +464,23 @@ export async function renderDirectory(container, params, query) {
       if (body.enabled === false) {
         state.askAvailable = false;
         state.filter = null;
+        state.mode = null;
+        state.label = '';
         state.aiError = '';
         state.aiNote = 'Ask is off, so this stays a plain text search.';
         renderGrid();
         return;
       }
-      if (!res.ok || !body.filter) {
+      if (!res.ok || !body.filter || (body.mode != null && body.mode !== 'count' && body.mode !== 'filter')) {
         state.filter = null;
+        state.mode = null;
+        state.label = '';
         state.aiNote = '';
         state.aiError = aiFailureText(res.status, body);
         renderGrid();
         return;
       }
+      const mode = body.mode === 'count' ? 'count' : 'filter';
       const slim = {
         conditions: (body.filter.conditions || []).map((condition) => ({
           field: condition.field,
@@ -458,7 +488,9 @@ export async function renderDirectory(container, params, query) {
           value: condition.value,
         })),
       };
-      state.filter = validateFilter(slim, { today: new Date() });
+      state.filter = validateFilter(slim, { today: new Date(), allowEmpty: mode === 'count' });
+      state.mode = mode;
+      state.label = mode === 'count' ? (state.filter.conditions.length ? 'match' : 'workers') : '';
       state.aiError = '';
       state.aiNote = '';
       if (filterNeedsRoster(state.filter)) await loadRoster();
@@ -473,6 +505,8 @@ export async function renderDirectory(container, params, query) {
       }
       state.askPending = false;
       state.filter = null;
+      state.mode = null;
+      state.label = '';
       state.aiNote = '';
       state.aiError = "That question couldn't be turned into a filter.";
       renderGrid();

@@ -5,8 +5,10 @@ import {
   FilterRejected,
   applyDirectoryFilter,
   chipText,
+  countAnswer,
   looksLikeQuestion,
   modelMessages,
+  validateAsk,
   validateFilter,
 } from '../js/lib/directoryFilter.js';
 
@@ -126,6 +128,34 @@ test('cert name and expiry have to be the same certification', () => {
   assert.equal(applyDirectoryFilter([split], filter, roster(), TODAY).length, 0);
 });
 
+test('a count of all workers uses an empty filter', () => {
+  const ask = validateAsk({ mode: 'count', conditions: [] }, { today: TODAY });
+  assert.equal(ask.mode, 'count');
+  assert.equal(ask.label, 'workers');
+  assert.deepEqual(ask.filter, { conditions: [] });
+  const count = applyDirectoryFilter(workers(), ask.filter, roster(), TODAY).length;
+  assert.equal(count, 4);
+  assert.equal(countAnswer(count, ask.label), '4 workers');
+  assert.equal(countAnswer(1, 'workers'), '1 worker');
+  assert.throws(() => validateAsk({ mode: 'filter', conditions: [] }, { today: TODAY }), FilterRejected);
+  assert.throws(() => validateFilter({ conditions: [] }, { today: TODAY }), FilterRejected);
+});
+
+test('a filtered count uses the same allowlist as a list', () => {
+  const osha = validateAsk({ mode: 'count', ...OSHA }, { today: TODAY });
+  assert.equal(osha.mode, 'count');
+  assert.equal(osha.label, 'match');
+  assert.equal(osha.filter.conditions[1].from, '2026-10-01');
+  const expiring = applyDirectoryFilter(workers(), osha.filter, roster(), TODAY);
+  assert.deepEqual(expiring.map((w) => w.name), ['Ada Lopez']);
+  assert.equal(countAnswer(expiring.length, osha.label), '1 match');
+
+  const confined = validateAsk({ mode: 'count', ...CONFINED }, { today: TODAY });
+  const cleared = applyDirectoryFilter(workers(), confined.filter, roster(), TODAY);
+  assert.deepEqual(cleared.map((w) => w.name), ['Ada Lopez']);
+  assert.equal(countAnswer(12, 'match'), '12 matches');
+});
+
 test('prompt-injection and off-allowlist model output is rejected', () => {
   const bad = [
     { sql: 'select * from workers', conditions: CONFINED.conditions },
@@ -135,9 +165,12 @@ test('prompt-injection and off-allowlist model output is rejected', () => {
     { conditions: [{ field: 'certifications.expiryDate', op: 'within', value: 'whenever' }] },
     { conditions: [] },
     { conditions: [{ field: 'site_clearance', op: 'eq', value: 'admin' }] },
+    { mode: 'count', sql: 'select * from workers', conditions: [] },
+    { mode: 'count', conditions: [{ field: 'workers.ssn', op: 'eq', value: '1234' }] },
+    { mode: 'drop', conditions: [] },
   ];
   for (const input of bad) {
-    assert.throws(() => validateFilter(input, { today: TODAY }), FilterRejected);
+    assert.throws(() => validateAsk(input, { today: TODAY }), FilterRejected);
   }
 });
 
@@ -152,11 +185,14 @@ test('the model is asked only for the allowlist and does not receive rows', () =
     assert.equal(FILTER_PROMPT.includes(field), true, field);
   }
   assert.equal(FILTER_PROMPT.includes('workers.ssn'), false);
+  assert.equal(FILTER_PROMPT.includes('mode is "count"'), true);
 });
 
 test('question-like text is recognized and a name search is not', () => {
   assert.equal(looksLikeQuestion("who's cleared for confined space at North site"), true);
   assert.equal(looksLikeQuestion('whose OSHA 30 expires this month'), true);
+  assert.equal(looksLikeQuestion('How many workers do I have?'), true);
+  assert.equal(looksLikeQuestion('how many are cleared for confined space at North site'), true);
   assert.equal(looksLikeQuestion('Lopez'), false);
   assert.equal(looksLikeQuestion('OSHA'), false);
 });

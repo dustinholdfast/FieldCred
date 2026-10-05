@@ -1,9 +1,9 @@
 // POST /directory-search.php
 //
-// Turns one plain-English question into an allowlisted filter. The model
-// never sees worker rows and never sends SQL. The browser runs the filter
-// through the Data API with the caller's own Neon Auth JWT, so RLS still
-// decides which workers come back.
+// Turns one plain-English question into an allowlisted filter, or a count
+// of the workers that filter matches. The model never sees worker rows and
+// never sends SQL. The browser applies the filter to the roster it already
+// loaded with the caller's Neon Auth JWT, so RLS still decides who is counted.
 //
 // GEMINI_API_KEY is a Worker secret. When it is missing this returns
 // { enabled: false } and the directory keeps plain text search.
@@ -16,7 +16,7 @@ import {
   FilterRejected,
   filterResponseSchema,
   modelMessages,
-  validateFilter,
+  validateAsk,
 } from '../js/lib/directoryFilter.js';
 
 export const DIRECTORY_SEARCH_LIMIT = { bucket: 'directory-search', max: 20, windowSeconds: 60 };
@@ -268,8 +268,10 @@ export async function directorySearchResult(request, env = {}, deps = {}) {
   }
   try {
     const today = typeof deps.today === 'function' ? deps.today() : (deps.today instanceof Date ? deps.today : new Date(nowMs));
-    const filter = validateFilter(parsed, { today });
-    return { status: 200, body: { enabled: true, filter } };
+    const ask = validateAsk(parsed, { today });
+    const body = { enabled: true, mode: ask.mode, filter: ask.filter };
+    if (ask.mode === 'count') body.label = ask.label;
+    return { status: 200, body };
   } catch (err) {
     if (err instanceof FilterRejected) {
       console.error('[directory-search] filter rejected');

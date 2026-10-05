@@ -240,6 +240,7 @@ img { display: block; max-width: 100%; }
 }
 .ai-filter-error { color: var(--expired-text); font-size: 13px; }
 .ai-filter-note { color: var(--text-secondary); font-size: 13px; }
+.ai-count { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 
 .worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 980px) { .worker-grid { grid-template-columns: repeat(2, 1fr); } }
