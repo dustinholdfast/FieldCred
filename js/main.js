@@ -14,7 +14,7 @@ import { renderGateApp } from './pages/gateApp.js';
 import { renderLogin } from './pages/login.js';
 import { renderSignup } from './pages/signup.js';
 import { renderResetPassword } from './pages/resetPassword.js';
-import { getSession, onAuthStateChange, signOut } from './lib/auth.js';
+import { getSession, onAuthStateChange, signOut, subscribeAppSession } from './lib/auth.js';
 import { initBackend, isConfigured, tenantName } from './lib/backendClient.js';
 import { installErrorReporting } from './lib/errorReporting.js';
 import { syncQueuedScans } from './lib/offlineSync.js';
@@ -39,8 +39,11 @@ function mountShell(active) {
   `;
   attachTopNav(app, {
     onSignOut: async () => {
+      // signOut() clears the UI session before /login renders. Leaving
+      // currentSession set makes /login bounce back to the directory,
+      // and that query is sent with the anonymous token.
       await signOut();
-      navigate('/login');
+      if (getPath() !== '/login') navigate('/login');
     },
   });
   return document.getElementById('page-content');
@@ -268,6 +271,14 @@ async function init() {
   recoveryModeActive = isPasswordRecoveryLink();
   await initBackend();
   if (isConfigured) {
+    subscribeAppSession((session) => {
+      currentSession = session;
+      if (recoveryModeActive) {
+        navigate('/reset-password');
+        return;
+      }
+      redispatch();
+    });
     onAuthStateChange((session, event) => {
       currentSession = session;
       if (event === 'PASSWORD_RECOVERY') {

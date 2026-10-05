@@ -1,6 +1,20 @@
 import { db, tenantSlug, authUrl } from './backendClient.js';
 import { roleFromSession } from './roles.js';
 
+// Neon Auth's client drops same-tab session events (it only broadcasts them
+// to other tabs). The UI session has to be updated here, or a signed-out
+// Neon client still looks signed in and the directory queries as anonymous.
+const appSessionListeners = new Set();
+
+export function subscribeAppSession(listener) {
+  appSessionListeners.add(listener);
+  return () => appSessionListeners.delete(listener);
+}
+
+export function setAppSession(session) {
+  for (const listener of appSessionListeners) listener(session);
+}
+
 // Neon Auth does not put fc_role on the session. The database does, in
 // staff_roles, via current_fc_role(). Stamp it onto app_metadata so the
 // rest of the app (roleFromSession) keeps reading one place.
@@ -25,11 +39,16 @@ export async function signIn(email, password) {
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
   if (data?.session) await withRole(data.session);
+  setAppSession(data?.session ?? null);
   return data.session;
 }
 
 export async function signOut() {
-  await db.auth.signOut();
+  try {
+    await db.auth.signOut();
+  } finally {
+    setAppSession(null);
+  }
 }
 
 export async function getSession() {

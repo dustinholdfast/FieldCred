@@ -8,7 +8,7 @@ import { openImportDialog } from '../components/importDialog.js';
 import { printBadgeCards } from '../lib/badgeCards.js';
 import { isCompliant, workerNeedsRenewal, summarizeCertStatuses } from '../lib/status.js';
 import { tenantName } from '../lib/backendClient.js';
-import { currentRole } from '../lib/auth.js';
+import { currentRole, getSession, setAppSession } from '../lib/auth.js';
 import { roleCan } from '../lib/roles.js';
 
 // A grid of shimmer cards matching the real worker-card footprint, so the
@@ -31,6 +31,16 @@ function skeletonGridHtml(count = 6) {
 
 export async function renderDirectory(container, params, query) {
   container.innerHTML = skeletonGridHtml();
+
+  // A stale UI session (Neon client already signed out) must not fall
+  // through to the anonymous token. That token is granted nothing on
+  // workers, and the select comes back as permission denied.
+  const session = await getSession();
+  if (!session) {
+    setAppSession(null);
+    navigate('/login?next=/directory');
+    return;
+  }
 
   let allWorkers;
   try {
