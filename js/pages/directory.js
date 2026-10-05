@@ -9,7 +9,8 @@ import { printBadgeCards } from '../lib/badgeCards.js';
 import { isCompliant, workerNeedsRenewal, summarizeCertStatuses } from '../lib/status.js';
 import { tenantName } from '../lib/backendClient.js';
 import { currentRole, getSession, setAppSession } from '../lib/auth.js';
-import { roleCan } from '../lib/roles.js';
+import { isPermissionError, roleCan } from '../lib/roles.js';
+import { isWakeStopped, wakingHtml, withWakeRetry } from '../lib/wake.js';
 
 // A grid of shimmer cards matching the real worker-card footprint, so the
 // layout doesn't jump when the data arrives.
@@ -29,26 +30,59 @@ function skeletonGridHtml(count = 6) {
   return `<div class="worker-grid">${card.repeat(count)}</div>`;
 }
 
+function directoryFailureHtml(err) {
+  const denied = isPermissionError(err);
+  // Never print the Postgres message. 42501 is "permission denied for table
+  // workers" and that string is not something to put on screen.
+  const detail = denied
+    ? "You don't have access to the worker directory."
+    : "The database didn't respond. Check your connection and try again.";
+  return `<div class="empty-state" role="alert">
+    <div class="empty-state-title">Couldn't load the directory.</div>
+    <div>${detail}</div>
+    <button class="btn btn-primary" type="button" id="directory-retry">Retry</button>
+  </div>`;
+}
+
 export async function renderDirectory(container, params, query) {
   container.innerHTML = skeletonGridHtml();
-
-  // A stale UI session (Neon client already signed out) must not fall
-  // through to the anonymous token. That token is granted nothing on
-  // workers, and the select comes back as permission denied.
-  const session = await getSession();
-  if (!session) {
-    setAppSession(null);
-    navigate('/login?next=/directory');
-    return;
-  }
+  const renderToken = {};
+  container.__directoryRender = renderToken;
+  const stillHere = () => container.__directoryRender === renderToken;
 
   let allWorkers;
   try {
-    allWorkers = await store.getAll();
+    allWorkers = await withWakeRetry(async () => {
+      // A stale UI session (Neon client already signed out) must not fall
+      // through to the anonymous token. That token is granted nothing on
+      // workers, and the select comes back as permission denied.
+      const session = await getSession();
+      if (!session) {
+        const err = new Error('Sign in required');
+        err.status = 401;
+        throw err;
+      }
+      return store.getAll();
+    }, {
+      isCurrent: stillHere,
+      onWaiting() {
+        if (stillHere()) container.innerHTML = wakingHtml();
+      },
+    });
   } catch (err) {
-    container.innerHTML = `<div class="empty-state">Couldn't load the directory: ${escapeHtml(err.message)}</div>`;
+    if (!stillHere() || isWakeStopped(err)) return;
+    if (err.status === 401 && !isPermissionError(err)) {
+      setAppSession(null);
+      navigate('/login?next=/directory');
+      return;
+    }
+    container.innerHTML = directoryFailureHtml(err);
+    container.querySelector('#directory-retry')?.addEventListener('click', () => {
+      renderDirectory(container, params, query);
+    });
     return;
   }
+  if (!stillHere()) return;
 
   // Add/import mutate the roster — hidden for roles that can't edit workers
   // (gate). RLS enforces it regardless; this just keeps the buttons honest.

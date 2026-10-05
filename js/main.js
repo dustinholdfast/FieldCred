@@ -15,6 +15,7 @@ import { renderLogin } from './pages/login.js';
 import { renderSignup } from './pages/signup.js';
 import { renderResetPassword } from './pages/resetPassword.js';
 import { getSession, onAuthStateChange, signOut, subscribeAppSession } from './lib/auth.js';
+import { isWakeStopped, wakingHtml, withWakeRetry } from './lib/wake.js';
 import { initBackend, isConfigured, tenantName } from './lib/backendClient.js';
 import { installErrorReporting } from './lib/errorReporting.js';
 import { syncQueuedScans } from './lib/offlineSync.js';
@@ -290,7 +291,18 @@ async function init() {
       }
       redispatch();
     });
-    currentSession = await getSession();
+    try {
+      const app = document.getElementById('app');
+      currentSession = await withWakeRetry(() => getSession(), {
+        onWaiting() {
+          if (app && !app.querySelector('.directory-header, .auth-card, .gate-app, .scan-page')) {
+            app.innerHTML = wakingHtml();
+          }
+        },
+      });
+    } catch (err) {
+      if (!isWakeStopped(err)) currentSession = null;
+    }
   }
   startRouter();
 

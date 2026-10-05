@@ -102,20 +102,23 @@ function siteRow(r) {
 // as a connection problem. Found 2026-07-20 against the demo tenant, where
 // search_site_roster's anon grant was missing and the gate app blamed the
 // network for it.
-function throwIfError(error) {
+function throwIfError(error, status) {
   if (!error) return;
   const err = new Error(error.message || 'Request failed');
   if (error.code) err.code = error.code;
   if (error.details) err.details = error.details;
   if (error.hint) err.hint = error.hint;
-  if (error.status ?? error.statusCode) err.status = error.status ?? error.statusCode;
+  // PostgREST puts the HTTP status on the result, not on the error object.
+  // Cold-start retries need that status to tell a 503 from a 42501.
+  const httpStatus = status ?? error.status ?? error.statusCode;
+  if (httpStatus !== undefined && httpStatus !== null && httpStatus !== '') err.status = httpStatus;
   throw err;
 }
 
 export const store = {
   async getAll() {
-    const { data, error } = await db.from('workers').select('*').order('name');
-    throwIfError(error);
+    const { data, error, status } = await db.from('workers').select('*').order('name');
+    throwIfError(error, status);
     return (data || []).map(rowToWorker);
   },
 
@@ -123,22 +126,22 @@ export const store = {
   // whole table (getAll pulls every worker with every column). `head: true`
   // fetches no rows, just the count, so this stays cheap as a tenant grows.
   async countWorkers() {
-    const { count, error } = await db.from('workers').select('id', { count: 'exact', head: true });
-    throwIfError(error);
+    const { count, error, status } = await db.from('workers').select('id', { count: 'exact', head: true });
+    throwIfError(error, status);
     return count ?? 0;
   },
 
   async getById(id) {
-    const { data, error } = await db.from('workers').select('*').eq('id', id).maybeSingle();
-    throwIfError(error);
+    const { data, error, status } = await db.from('workers').select('*').eq('id', id).maybeSingle();
+    throwIfError(error, status);
     return data ? rowToWorker(data) : null;
   },
 
   // Public, unauthenticated-safe lookup — reads the `public_workers` view,
   // which omits phone/email and only returns rows with public sharing on.
   async getBySlug(slug) {
-    const { data, error } = await db.from('public_workers').select('*').eq('public_slug', slug).maybeSingle();
-    throwIfError(error);
+    const { data, error, status } = await db.from('public_workers').select('*').eq('public_slug', slug).maybeSingle();
+    throwIfError(error, status);
     return data ? rowToWorker(data) : null;
   },
 
@@ -147,8 +150,8 @@ export const store = {
   // path to site data (there's no site list to enumerate). Returns null for an
   // unknown or inactive slug (fail-closed: the gate can't clear against it).
   async getPublicSite(slug) {
-    const { data, error } = await db.rpc('get_public_site', { slug });
-    throwIfError(error);
+    const { data, error, status } = await db.rpc('get_public_site', { slug });
+    throwIfError(error, status);
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;
     return { id: row.id, name: row.name, publicSlug: row.public_slug, requiredTypes: row.required_types || [] };
@@ -167,8 +170,8 @@ export const store = {
   async searchSiteRoster(siteSlug, query) {
     const term = (query || '').trim();
     if (!siteSlug || term.length < 2) return [];
-    const { data, error } = await db.rpc('search_site_roster', { p_site_slug: siteSlug, p_query: term });
-    throwIfError(error);
+    const { data, error, status } = await db.rpc('search_site_roster', { p_site_slug: siteSlug, p_query: term });
+    throwIfError(error, status);
     return (data || []).map((r) => ({
       publicSlug: r.public_slug,
       name: r.name || '',
@@ -181,16 +184,16 @@ export const store = {
   // the one column rather than pulling every worker row in full (skills,
   // certifications jsonb, etc.) just to derive a short list.
   async departments() {
-    const { data, error } = await db.from('workers').select('department').order('department');
-    throwIfError(error);
+    const { data, error, status } = await db.from('workers').select('department').order('department');
+    throwIfError(error, status);
     return [...new Set((data || []).map((r) => r.department).filter(Boolean))].sort();
   },
 
   async createWorker(data) {
     const row = workerToRow(data);
     row.public_slug = makeSlug(data.name);
-    const { data: inserted, error } = await db.from('workers').insert(row).select().single();
-    throwIfError(error);
+    const { data: inserted, error, status } = await db.from('workers').insert(row).select().single();
+    throwIfError(error, status);
     return rowToWorker(inserted);
   },
 
@@ -206,21 +209,21 @@ export const store = {
       row.public_slug = makeSlug(data.name);
       return row;
     });
-    const { data: inserted, error } = await db.from('workers').insert(rows).select();
-    throwIfError(error);
+    const { data: inserted, error, status } = await db.from('workers').insert(rows).select();
+    throwIfError(error, status);
     return (inserted || []).map(rowToWorker);
   },
 
   async updateWorker(id, data) {
     const row = workerToRow(data);
-    const { data: updated, error } = await db.from('workers').update(row).eq('id', id).select().single();
-    throwIfError(error);
+    const { data: updated, error, status } = await db.from('workers').update(row).eq('id', id).select().single();
+    throwIfError(error, status);
     return rowToWorker(updated);
   },
 
   async deleteWorker(id) {
-    const { error } = await db.from('workers').delete().eq('id', id);
-    throwIfError(error);
+    const { error, status } = await db.from('workers').delete().eq('id', id);
+    throwIfError(error, status);
   },
 
   async setPublicView(id, enabled) {
@@ -237,13 +240,13 @@ export const store = {
   async uploadImage(bucket, file) {
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${makeId()}.${ext}`;
-    const { error } = await db.rpc('upload_file', {
+    const { error, status } = await db.rpc('upload_file', {
       p_bucket: bucket,
       p_path: path,
       p_content_type: file.type || 'application/octet-stream',
       p_data: await fileToBase64(file),
     });
-    throwIfError(error);
+    throwIfError(error, status);
     if (bucket === 'certificates') return path;
     return publicFileUrl(tenantSlug, bucket, path);
   },
@@ -259,8 +262,8 @@ export const store = {
     const marker = '/object/public/certificates/';
     const normalizedPath = path.includes(marker) ? path.split(marker)[1] : path;
     if (/^https?:\/\//i.test(normalizedPath)) return normalizedPath;
-    const { data, error } = await db.rpc('create_file_grant', { p_path: normalizedPath, p_seconds: 300 });
-    throwIfError(error);
+    const { data, error, status } = await db.rpc('create_file_grant', { p_path: normalizedPath, p_seconds: 300 });
+    throwIfError(error, status);
     const token = Array.isArray(data) ? data[0] : data;
     return grantedFileUrl(tenantSlug, token);
   },
@@ -268,28 +271,28 @@ export const store = {
   // Tenant display name — anon-readable (shown pre-login), authenticated-
   // writable (Admin screen). Single row (id = 1); see supabase/schema.sql.
   async getTenantName() {
-    const { data, error } = await db.from('settings').select('tenant_name').eq('id', 1).maybeSingle();
-    throwIfError(error);
+    const { data, error, status } = await db.from('settings').select('tenant_name').eq('id', 1).maybeSingle();
+    throwIfError(error, status);
     return data?.tenant_name || null;
   },
 
   async setTenantName(name) {
-    const { data, error } = await db.from('settings').update({ tenant_name: name }).eq('id', 1).select('tenant_name').single();
-    throwIfError(error);
+    const { data, error, status } = await db.from('settings').update({ tenant_name: name }).eq('id', 1).select('tenant_name').single();
+    throwIfError(error, status);
     return data.tenant_name;
   },
 
   // Where expiration-alert emails are sent (see supabase/functions/expiration-alerts).
   // Blank/null means alerts are off for this tenant.
   async getNotificationEmail() {
-    const { data, error } = await db.from('settings').select('notification_email').eq('id', 1).maybeSingle();
-    throwIfError(error);
+    const { data, error, status } = await db.from('settings').select('notification_email').eq('id', 1).maybeSingle();
+    throwIfError(error, status);
     return data?.notification_email || '';
   },
 
   async setNotificationEmail(email) {
-    const { data, error } = await db.from('settings').update({ notification_email: email || null }).eq('id', 1).select('notification_email').single();
-    throwIfError(error);
+    const { data, error, status } = await db.from('settings').update({ notification_email: email || null }).eq('id', 1).select('notification_email').single();
+    throwIfError(error, status);
     return data.notification_email || '';
   },
 
@@ -299,12 +302,12 @@ export const store = {
   // Best-effort at the call site (admin.js) for tenants that haven't run
   // migrations 005/006 yet, same pattern as getNotificationEmail.
   async getExtendedSettings() {
-    const { data, error } = await db
+    const { data, error, status } = await db
       .from('settings')
       .select('logo_url, timezone, digest_cadence, digest_day_of_week, digest_hour')
       .eq('id', 1)
       .maybeSingle();
-    throwIfError(error);
+    throwIfError(error, status);
     return {
       logoUrl: data?.logo_url || null,
       timezone: data?.timezone || 'UTC',
@@ -315,7 +318,7 @@ export const store = {
   },
 
   async updateExtendedSettings({ logoUrl, timezone, digestCadence, digestDayOfWeek, digestHour }) {
-    const { error } = await db
+    const { error, status } = await db
       .from('settings')
       .update({
         logo_url: logoUrl,
@@ -325,7 +328,7 @@ export const store = {
         digest_hour: digestHour,
       })
       .eq('id', 1);
-    throwIfError(error);
+    throwIfError(error, status);
   },
 
   // Read-only from the app — see supabase/schema.sql's plan_limits table.
@@ -344,18 +347,18 @@ export const store = {
   // here. Authenticated CRUD, single shared admin role like everything else.
 
   async credentialTypes() {
-    const { data, error } = await db.from('credential_types').select('id, name, issuer').order('name');
-    throwIfError(error);
+    const { data, error, status } = await db.from('credential_types').select('id, name, issuer').order('name');
+    throwIfError(error, status);
     return (data || []).map((r) => ({ id: r.id, name: r.name, issuer: r.issuer || '' }));
   },
 
   async createCredentialType(name, issuer = '') {
-    const { data, error } = await db
+    const { data, error, status } = await db
       .from('credential_types')
       .insert({ name: name.trim(), issuer: issuer.trim() })
       .select('id, name, issuer')
       .single();
-    throwIfError(error);
+    throwIfError(error, status);
     return { id: data.id, name: data.name, issuer: data.issuer || '' };
   },
 
@@ -363,8 +366,8 @@ export const store = {
     const patch = {};
     if (name !== undefined) patch.name = name.trim();
     if (issuer !== undefined) patch.issuer = issuer.trim();
-    const { data, error } = await db.from('credential_types').update(patch).eq('id', id).select('id, name, issuer').single();
-    throwIfError(error);
+    const { data, error, status } = await db.from('credential_types').update(patch).eq('id', id).select('id, name, issuer').single();
+    throwIfError(error, status);
     return { id: data.id, name: data.name, issuer: data.issuer || '' };
   },
 
@@ -372,8 +375,8 @@ export const store = {
   // cascade). Certs tagged with it keep a now-dangling typeId — harmless and
   // fail-closed: a cert pointing at a missing type matches no requirement.
   async deleteCredentialType(id) {
-    const { error } = await db.from('credential_types').delete().eq('id', id);
-    throwIfError(error);
+    const { error, status } = await db.from('credential_types').delete().eq('id', id);
+    throwIfError(error, status);
   },
 
   // One-time backfill: seed the catalog from the distinct cert names already
@@ -430,21 +433,21 @@ export const store = {
   // ---- Sites, requirements, rosters (see supabase/migrations/007) ---------
 
   async sites() {
-    const { data, error } = await db.from('sites').select('id, name, location, active, public_slug').order('name');
-    throwIfError(error);
+    const { data, error, status } = await db.from('sites').select('id, name, location, active, public_slug').order('name');
+    throwIfError(error, status);
     return (data || []).map(siteRow);
   },
 
   async getSite(id) {
-    const { data, error } = await db.from('sites').select('id, name, location, active, public_slug').eq('id', id).maybeSingle();
-    throwIfError(error);
+    const { data, error, status } = await db.from('sites').select('id, name, location, active, public_slug').eq('id', id).maybeSingle();
+    throwIfError(error, status);
     return data ? siteRow(data) : null;
   },
 
   async createSite({ name, location = '' }) {
     const row = { name: name.trim(), location: location.trim(), public_slug: makeSlug(name) };
-    const { data, error } = await db.from('sites').insert(row).select('id, name, location, active, public_slug').single();
-    throwIfError(error);
+    const { data, error, status } = await db.from('sites').insert(row).select('id, name, location, active, public_slug').single();
+    throwIfError(error, status);
     return siteRow(data);
   },
 
@@ -453,20 +456,20 @@ export const store = {
     if (name !== undefined) patch.name = name.trim();
     if (location !== undefined) patch.location = location.trim();
     if (active !== undefined) patch.active = active;
-    const { data, error } = await db.from('sites').update(patch).eq('id', id).select('id, name, location, active, public_slug').single();
-    throwIfError(error);
+    const { data, error, status } = await db.from('sites').update(patch).eq('id', id).select('id, name, location, active, public_slug').single();
+    throwIfError(error, status);
     return siteRow(data);
   },
 
   async deleteSite(id) {
-    const { error } = await db.from('sites').delete().eq('id', id);
-    throwIfError(error);
+    const { error, status } = await db.from('sites').delete().eq('id', id);
+    throwIfError(error, status);
   },
 
   // A site's required credential-type ids.
   async siteRequiredTypeIds(siteId) {
-    const { data, error } = await db.from('site_required_types').select('type_id').eq('site_id', siteId);
-    throwIfError(error);
+    const { data, error, status } = await db.from('site_required_types').select('type_id').eq('site_id', siteId);
+    throwIfError(error, status);
     return (data || []).map((r) => r.type_id);
   },
 
@@ -476,42 +479,42 @@ export const store = {
   // failure is visible rather than silently wrong.
   async setSiteRequiredTypes(siteId, typeIds) {
     const del = await db.from('site_required_types').delete().eq('site_id', siteId);
-    throwIfError(del.error);
+    throwIfError(del.error, del.status);
     if (typeIds.length) {
       const rows = typeIds.map((type_id) => ({ site_id: siteId, type_id }));
       const ins = await db.from('site_required_types').insert(rows);
-      throwIfError(ins.error);
+      throwIfError(ins.error, ins.status);
     }
   },
 
   // A site's assigned worker ids (the roster).
   async siteWorkerIds(siteId) {
-    const { data, error } = await db.from('site_assignments').select('worker_id').eq('site_id', siteId);
-    throwIfError(error);
+    const { data, error, status } = await db.from('site_assignments').select('worker_id').eq('site_id', siteId);
+    throwIfError(error, status);
     return (data || []).map((r) => r.worker_id);
   },
 
   async setSiteAssignments(siteId, workerIds) {
     const del = await db.from('site_assignments').delete().eq('site_id', siteId);
-    throwIfError(del.error);
+    throwIfError(del.error, del.status);
     if (workerIds.length) {
       const rows = workerIds.map((worker_id) => ({ site_id: siteId, worker_id }));
       const ins = await db.from('site_assignments').insert(rows);
-      throwIfError(ins.error);
+      throwIfError(ins.error, ins.status);
     }
   },
 
   // Bulk maps for the sites LIST page, so it can show a readiness summary per
   // site without a per-site round trip. Two queries instead of 2N.
   async allSiteRequiredTypes() {
-    const { data, error } = await db.from('site_required_types').select('site_id, type_id');
-    throwIfError(error);
+    const { data, error, status } = await db.from('site_required_types').select('site_id, type_id');
+    throwIfError(error, status);
     return data || [];
   },
 
   async allSiteAssignments() {
-    const { data, error } = await db.from('site_assignments').select('site_id, worker_id');
-    throwIfError(error);
+    const { data, error, status } = await db.from('site_assignments').select('site_id, worker_id');
+    throwIfError(error, status);
     return data || [];
   },
 
@@ -527,14 +530,14 @@ export const store = {
   // client-side via evaluateClearance for what it shows). Best-effort by
   // design — callers should not let a logging failure block the gate UI.
   async recordGateScan(siteSlug, workerSlug, { direction = 'in', deviceId = null, guardLabel = null } = {}) {
-    const { data, error } = await db.rpc('record_gate_scan', {
+    const { data, error, status } = await db.rpc('record_gate_scan', {
       p_site_slug: siteSlug,
       p_worker_slug: workerSlug,
       p_direction: direction,
       p_device_id: deviceId,
       p_guard_label: guardLabel,
     });
-    throwIfError(error);
+    throwIfError(error, status);
     const row = Array.isArray(data) ? data[0] : data;
     return row ? { result: row.result, workerName: row.worker_name, missingTypeNames: row.missing_type_names || [] } : null;
   },
@@ -558,8 +561,8 @@ export const store = {
       .limit(limit);
     if (from) query = query.gte('scanned_at', from);
     if (to) query = query.lte('scanned_at', to);
-    const { data, error } = await query;
-    throwIfError(error);
+    const { data, error, status } = await query;
+    throwIfError(error, status);
     return (data || []).map((r) => ({
       id: r.id,
       workerId: r.worker_id,

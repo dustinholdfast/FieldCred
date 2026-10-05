@@ -52,9 +52,12 @@ export async function signOut() {
 }
 
 export async function getSession() {
-  const { data } = await db.auth.getSession();
+  const { data, error } = await db.auth.getSession();
+  // A cold Auth compute throws (or returns) a 5xx. Callers retry that.
+  // Signed-out is data with no session and no error — not a failure.
+  if (error) throw error;
   if (data?.session) await withRole(data.session);
-  return data.session;
+  return data?.session ?? null;
 }
 
 // The current user's role (admin | safety | gate), read from the session

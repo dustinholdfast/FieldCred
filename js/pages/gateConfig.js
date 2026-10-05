@@ -2,6 +2,7 @@ import { store } from '../lib/state.js';
 import { navigate } from '../lib/router.js';
 import { escapeHtml } from '../lib/format.js';
 import { shieldLogo } from '../components/logo.js';
+import { isAuthOrPermissionError, isWakeStopped, warmDatabase, wakingHtml, withWakeRetry } from '../lib/wake.js';
 
 // Public device-config page. A site's QR (posted at the gate) points here;
 // visiting it remembers the site on this device (localStorage), so subsequent
@@ -9,14 +10,38 @@ import { shieldLogo } from '../components/logo.js';
 const GATE_KEY = 'fieldcred_gate_site';
 
 export async function renderGateConfig(container, params) {
+  warmDatabase();
   container.innerHTML = `<div class="public-page"><div class="public-unavailable">Setting up gate…</div></div>`;
+  const renderToken = {};
+  container.__gateRender = renderToken;
+  const stillHere = () => container.__gateRender === renderToken;
 
   let site = null;
   try {
-    site = await store.getPublicSite(params.slug);
-  } catch {
-    site = null;
+    site = await withWakeRetry(() => store.getPublicSite(params.slug), {
+      isCurrent: stillHere,
+      onWaiting() {
+        if (stillHere()) container.innerHTML = `<div class="public-page">${wakingHtml()}</div>`;
+      },
+    });
+  } catch (err) {
+    if (!stillHere() || isWakeStopped(err)) return;
+    const detail = isAuthOrPermissionError(err)
+      ? "You don't have access to this gate."
+      : "The database didn't respond. Check your connection and try again.";
+    container.innerHTML = `
+      <div class="public-page">
+        <div class="empty-state" role="alert">
+          <div class="empty-state-title">Couldn't open this gate.</div>
+          <div>${detail}</div>
+          <button class="btn btn-primary" type="button" id="gate-retry">Retry</button>
+        </div>
+      </div>`;
+    container.querySelector('#gate-retry')?.addEventListener('click', () => renderGateConfig(container, params));
+    return;
   }
+
+  if (!stillHere()) return;
 
   if (!site) {
     container.innerHTML = `
