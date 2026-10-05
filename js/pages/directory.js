@@ -7,10 +7,38 @@ import { openShareDialog } from '../components/shareDialog.js';
 import { openImportDialog } from '../components/importDialog.js';
 import { printBadgeCards } from '../lib/badgeCards.js';
 import { isCompliant, workerNeedsRenewal, summarizeCertStatuses } from '../lib/status.js';
-import { tenantName } from '../lib/backendClient.js';
+import { tenantName, tenantSlug } from '../lib/backendClient.js';
 import { currentRole, getSession, setAppSession } from '../lib/auth.js';
 import { isPermissionError, roleCan } from '../lib/roles.js';
 import { isWakeStopped, wakingHtml, withWakeRetry } from '../lib/wake.js';
+import {
+  QUESTION_MAX,
+  chipParts,
+  filterNeedsRoster,
+  looksLikeQuestion,
+  validateFilter,
+  valueFromChip,
+  workerMatchesFilter,
+} from '../lib/directoryFilter.js';
+
+const EMPTY_ROSTER = { sites: [], credentialTypes: [], requiredTypes: [], assignments: [] };
+
+function plainHaystack(worker) {
+  return [
+    worker.name,
+    worker.title,
+    worker.department,
+    ...(worker.skills || []),
+    ...(worker.certifications || []).map((cert) => cert.name),
+  ].join(' ').toLowerCase();
+}
+
+function aiFailureText(status) {
+  if (status === 429) return 'Too many questions. Wait a moment and try again.';
+  if (status === 503) return 'The database is waking up. Try again in a moment.';
+  if (status === 400) return 'That question is too long.';
+  return "That question couldn't be turned into a filter.";
+}
 
 // A grid of shimmer cards matching the real worker-card footprint, so the
 // layout doesn't jump when the data arrives.
@@ -93,6 +121,14 @@ export async function renderDirectory(container, params, query) {
     department: 'all',
     certStatus: 'all',
     needsRenewal: false,
+    ask: false,
+    holdPlain: false,
+    askAvailable: true,
+    askPending: false,
+    filter: null,
+    roster: null,
+    aiError: '',
+    aiNote: '',
   };
 
   const departments = [...new Set(allWorkers.map((w) => w.department).filter(Boolean))].sort();
@@ -113,8 +149,9 @@ export async function renderDirectory(container, params, query) {
     <div class="filter-row">
       <div class="filter-search">
         ${icons.search.replace('class="icon"', 'class="icon icon-sm"')}
-        <input type="text" id="dir-search" placeholder="Search by name, skill, or certification…" autocomplete="off">
+        <input type="text" id="dir-search" placeholder="Search by name, skill, or certification, or ask a question…" autocomplete="off">
       </div>
+      <button type="button" class="filter-chip" id="dir-ask" aria-pressed="false">Ask</button>
       <label class="filter-chip">
         <select id="dir-department">
           <option value="all">All departments</option>
@@ -134,6 +171,7 @@ export async function renderDirectory(container, params, query) {
       </label>
       <div class="filter-chip" id="dir-needs-renewal">${icons.alert.replace('class="icon"', 'class="icon icon-sm"')} Needs renewal</div>
     </div>
+    <div class="ai-filter" id="ai-filter" hidden></div>
 
     <div class="worker-grid" id="worker-grid"></div>
   `;
@@ -144,8 +182,19 @@ export async function renderDirectory(container, params, query) {
   const deptSelect = container.querySelector('#dir-department');
   const certSelect = container.querySelector('#dir-cert-status');
   const renewalChip = container.querySelector('#dir-needs-renewal');
+  const askBtn = container.querySelector('#dir-ask');
+  const aiHost = container.querySelector('#ai-filter');
 
   searchInput.value = state.q;
+  let askSeq = 0;
+  let askTimer = 0;
+
+  function wantsAsk() {
+    if (state.holdPlain) return false;
+    const q = state.q.trim();
+    if (!q) return false;
+    return state.ask || looksLikeQuestion(q);
+  }
 
   function matches(w) {
     if (state.department !== 'all' && w.department !== state.department) return false;
@@ -154,23 +203,104 @@ export async function renderDirectory(container, params, query) {
       if (!summary[state.certStatus]) return false;
     }
     if (state.needsRenewal && !workerNeedsRenewal(w)) return false;
-    if (state.q) {
-      const q = state.q.toLowerCase();
-      const haystack = [
-        w.name,
-        w.title,
-        w.department,
-        ...w.skills,
-        ...w.certifications.map((c) => c.name),
-      ]
-        .join(' ')
-        .toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
+    if (state.filter) return workerMatchesFilter(w, state.filter, state.roster || EMPTY_ROSTER, new Date());
+    if (state.askPending || state.aiError) return true;
+    const q = state.q.trim().toLowerCase();
+    if (q && !plainHaystack(w).includes(q)) return false;
     return true;
   }
 
+  function aiSignature() {
+    return JSON.stringify({
+      filter: state.filter,
+      error: state.aiError,
+      note: state.aiNote,
+      pending: state.askPending,
+    });
+  }
+
+  function renderAi() {
+    const sig = aiSignature();
+    if (aiHost.dataset.sig === sig) return;
+    aiHost.dataset.sig = sig;
+    const bits = [];
+    if (state.askPending) bits.push('<span class="ai-filter-note">Reading your question…</span>');
+    if (state.aiNote) bits.push(`<span class="ai-filter-note">${escapeHtml(state.aiNote)}</span>`);
+    if (state.aiError) bits.push(`<span class="ai-filter-error" role="alert">${escapeHtml(state.aiError)}</span>`);
+    if (state.filter) {
+      state.filter.conditions.forEach((condition, index) => {
+        const parts = chipParts(condition);
+        bits.push(
+          `<span class="ai-chip" data-chip="${escapeHtml(parts.text)}">`
+          + `<span>${escapeHtml(parts.label)}</span>`
+          + `<input data-ai-value="${index}" value="${escapeHtml(parts.shown)}" aria-label="${escapeHtml(parts.text)}">`
+          + `<button type="button" class="ai-chip-x" data-ai-clear="${index}" aria-label="Remove ${escapeHtml(parts.text)}">×</button>`
+          + `</span>`,
+        );
+      });
+      bits.push('<button type="button" class="ai-clear" id="ai-clear-all">Clear</button>');
+    }
+    const show = bits.length > 0;
+    aiHost.hidden = !show;
+    aiHost.innerHTML = bits.join('');
+    aiHost.querySelectorAll('[data-ai-value]').forEach((input) => {
+      input.addEventListener('input', () => editChip(Number(input.dataset.aiValue), input.value));
+    });
+    aiHost.querySelectorAll('[data-ai-clear]').forEach((btn) => {
+      btn.addEventListener('click', () => removeChip(Number(btn.dataset.aiClear)));
+    });
+    aiHost.querySelector('#ai-clear-all')?.addEventListener('click', clearAsk);
+  }
+
+  function editChip(index, shown) {
+    if (!state.filter) return;
+    const draft = {
+      conditions: state.filter.conditions.map((condition, i) => (
+        i === index
+          ? { field: condition.field, op: condition.op, value: valueFromChip(shown) }
+          : { field: condition.field, op: condition.op, value: condition.value }
+      )),
+    };
+    try {
+      state.filter = validateFilter(draft, { today: new Date() });
+      state.aiError = '';
+      aiHost.querySelector('.ai-filter-error')?.remove();
+      aiHost.dataset.sig = aiSignature();
+      renderGrid();
+    } catch {
+      state.aiError = 'That value is not allowed.';
+      const alert = aiHost.querySelector('.ai-filter-error');
+      if (alert) alert.textContent = state.aiError;
+      else renderAi();
+    }
+  }
+
+  function removeChip(index) {
+    if (!state.filter) return;
+    const kept = state.filter.conditions.filter((_, i) => i !== index);
+    if (!kept.length) {
+      clearAsk();
+      return;
+    }
+    state.filter = { conditions: kept };
+    renderGrid();
+  }
+
+  function clearAsk() {
+    state.holdPlain = true;
+    state.ask = false;
+    state.filter = null;
+    state.aiError = '';
+    state.aiNote = '';
+    state.askPending = false;
+    askBtn.classList.remove('active');
+    askBtn.setAttribute('aria-pressed', 'false');
+    window.clearTimeout(askTimer);
+    renderGrid();
+  }
+
   function renderGrid() {
+    renderAi();
     const filtered = allWorkers.filter(matches);
     const compliantCount = allWorkers.filter(isCompliant).length;
     const compliantPct = allWorkers.length ? Math.round((compliantCount / allWorkers.length) * 100) : 0;
@@ -209,9 +339,152 @@ export async function renderDirectory(container, params, query) {
     });
   }
 
+  function scheduleAsk(delay = 400) {
+    window.clearTimeout(askTimer);
+    const q = state.q.trim();
+    if (!wantsAsk()) {
+      state.askPending = false;
+      if (!state.holdPlain) {
+        state.filter = null;
+        state.aiError = '';
+        state.aiNote = '';
+      }
+      renderGrid();
+      return;
+    }
+    if (q.length > QUESTION_MAX) {
+      state.askPending = false;
+      state.filter = null;
+      state.aiNote = '';
+      state.aiError = 'That question is too long.';
+      renderGrid();
+      return;
+    }
+    if (state.askAvailable === false) {
+      state.askPending = false;
+      state.filter = null;
+      state.aiError = '';
+      state.aiNote = 'Ask is off, so this stays a plain text search.';
+      renderGrid();
+      return;
+    }
+    state.aiError = '';
+    state.aiNote = '';
+    state.askPending = true;
+    renderGrid();
+    const seq = ++askSeq;
+    askTimer = window.setTimeout(() => { runAsk(seq); }, delay);
+  }
+
+  async function loadRoster() {
+    if (state.roster) return state.roster;
+    const [sites, credentialTypes, requiredTypes, assignments] = await withWakeRetry(() => Promise.all([
+      store.sites(),
+      store.credentialTypes(),
+      store.allSiteRequiredTypes(),
+      store.allSiteAssignments(),
+    ]), {
+      isCurrent: stillHere,
+      onWaiting() {
+        if (!stillHere()) return;
+        state.aiNote = 'Waking up the database…';
+        renderAi();
+      },
+    });
+    state.roster = { sites, credentialTypes, requiredTypes, assignments };
+    return state.roster;
+  }
+
+  async function runAsk(seq) {
+    if (!stillHere() || seq !== askSeq) return;
+    const question = state.q.trim();
+    try {
+      const session = await withWakeRetry(() => getSession(), {
+        isCurrent: stillHere,
+        onWaiting() {
+          if (!stillHere()) return;
+          state.aiNote = 'Waking up the database…';
+          renderAi();
+        },
+      });
+      // Neon maps the auth JWT onto access_token. The raw better-auth
+      // session uses token. Either one is the signed-in bearer.
+      const token = session?.access_token || session?.token;
+      if (!token) {
+        setAppSession(null);
+        navigate('/login?next=/directory');
+        return;
+      }
+      const res = await fetch('./directory-search.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tenant: tenantSlug, question }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!stillHere() || seq !== askSeq) return;
+      if (res.status === 401) {
+        setAppSession(null);
+        navigate('/login?next=/directory');
+        return;
+      }
+      state.askPending = false;
+      if (body.enabled === false) {
+        state.askAvailable = false;
+        state.filter = null;
+        state.aiError = '';
+        state.aiNote = 'Ask is off, so this stays a plain text search.';
+        renderGrid();
+        return;
+      }
+      if (!res.ok || !body.filter) {
+        state.filter = null;
+        state.aiNote = '';
+        state.aiError = aiFailureText(res.status);
+        renderGrid();
+        return;
+      }
+      const slim = {
+        conditions: (body.filter.conditions || []).map((condition) => ({
+          field: condition.field,
+          op: condition.op,
+          value: condition.value,
+        })),
+      };
+      state.filter = validateFilter(slim, { today: new Date() });
+      state.aiError = '';
+      state.aiNote = '';
+      if (filterNeedsRoster(state.filter)) await loadRoster();
+      if (!stillHere() || seq !== askSeq) return;
+      renderGrid();
+    } catch (err) {
+      if (!stillHere() || isWakeStopped(err) || seq !== askSeq) return;
+      if (err.status === 401 && !isPermissionError(err)) {
+        setAppSession(null);
+        navigate('/login?next=/directory');
+        return;
+      }
+      state.askPending = false;
+      state.filter = null;
+      state.aiNote = '';
+      state.aiError = "That question couldn't be turned into a filter.";
+      renderGrid();
+    }
+  }
+
   searchInput.addEventListener('input', () => {
     state.q = searchInput.value;
-    renderGrid();
+    state.holdPlain = false;
+    scheduleAsk();
+  });
+  askBtn.addEventListener('click', () => {
+    state.ask = !state.ask;
+    state.holdPlain = false;
+    askBtn.classList.toggle('active', state.ask);
+    askBtn.setAttribute('aria-pressed', state.ask ? 'true' : 'false');
+    scheduleAsk(0);
   });
   deptSelect.addEventListener('change', () => {
     state.department = deptSelect.value;
@@ -237,4 +510,5 @@ export async function renderDirectory(container, params, query) {
   });
 
   renderGrid();
+  if (wantsAsk()) scheduleAsk(0);
 }

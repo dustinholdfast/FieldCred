@@ -2,6 +2,13 @@
   // Deploy to the workers.dev hostname only.
   // Do not add `routes`, a zone, or a custom domain for fieldcred.co here.
   //   npx wrangler secret put RESEND_API_KEY
+  // Plain-English directory search (POST /directory-search.php) calls the
+  // Neon AI Gateway from this Worker. Set both secrets before deploy.
+  // When either is missing the endpoint returns {"enabled":false} and the
+  // directory keeps plain text search. Optional NEON_AI_GATEWAY_MODEL
+  // overrides the default model id; it is not a secret.
+  //   npx wrangler secret put NEON_AI_GATEWAY_TOKEN
+  //   npx wrangler secret put NEON_AI_GATEWAY_BASE_URL
   //   npx wrangler deploy
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "fieldcred",
@@ -43,7 +50,8 @@
       "/file.php",
       "/tenants.php",
       "/signup-config.php",
-      "/rate-limit.php"
+      "/rate-limit.php",
+      "/directory-search.php"
     ]
   },
   "vars": {
