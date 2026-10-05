@@ -264,6 +264,7 @@ export async function handleRequest(request, env = {}, deps = {}) {
       nowMs,
       tenants,
       today: deps.today,
+      sleep: deps.sleep,
     });
     return json(result.status, result.body, result.headers);
   }

@@ -127,7 +127,7 @@ test('good questions become the expected filters and the model never sees rows',
   assert.equal(confined.body.enabled, true);
   assert.deepEqual(confined.body.filter, confinedModel);
   const geminiCall = confined.calls.find((call) => call.url.includes(':generateContent'));
-  assert.equal(geminiCall.url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+  assert.equal(geminiCall.url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent');
   assert.equal(geminiCall.url.includes('test-gemini-key'), false);
   const sent = JSON.parse(geminiCall.init.body);
   assert.equal(sent.contents[0].parts[0].text, "who's cleared for confined space at North site");
@@ -171,7 +171,7 @@ test('GEMINI_MODEL selects the generateContent model and a bad id is ignored', a
   });
   assert.equal(bad.status, 200);
   assert.equal(
-    bad.calls.some((call) => call.url.endsWith('/models/gemini-3.8-flash:generateContent')),
+    bad.calls.some((call) => call.url.endsWith('/models/gemini-3.5-flash:generateContent')),
     true,
   );
 });
@@ -194,6 +194,118 @@ test('prompt-injection and off-allowlist model output is rejected', async () => 
     model: { conditions: [{ field: 'workers.ssn', op: 'eq', value: 'secret' }] },
   });
   assert.equal(unknown.status, 422);
+});
+
+const OSHA_FILTER = {
+  conditions: [
+    { field: 'certifications.name', op: 'contains', value: 'OSHA 30' },
+    { field: 'certifications.expiryDate', op: 'within', value: 'this_month' },
+  ],
+};
+
+function scriptedGemini(steps, { role = 'admin' } = {}) {
+  const calls = [];
+  let n = 0;
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).includes('/rpc/current_fc_role')) {
+      return new Response(JSON.stringify(role), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    const step = steps[n];
+    n += 1;
+    if (!step) return new Response('extra gemini call', { status: 500 });
+    if (step.status) return new Response('{}', { status: step.status });
+    return geminiResponse(step.model);
+  };
+  return { fetchImpl, calls };
+}
+
+async function scriptedSearch(question, steps, { env = geminiEnv(), sub = 'retry-user' } = {}) {
+  const sleeps = [];
+  const { fetchImpl, calls } = scriptedGemini(steps);
+  const response = await handleRequest(req({ tenant: 'demo', question }, { token: staffJwt(sub) }), env, {
+    fetchImpl,
+    now: () => NOW,
+    nowMs: () => NOW_MS,
+    today: () => TODAY,
+    sleep: async (ms) => { sleeps.push(ms); },
+  });
+  const body = await response.json();
+  const models = calls
+    .filter((call) => call.url.includes(':generateContent'))
+    .map((call) => call.url.split('/models/')[1].replace(':generateContent', ''));
+  return { status: response.status, body, models, sleeps };
+}
+
+test('a 503 from Gemini is retried, then a fallback model can still return a filter', async () => {
+  resetRateLimits();
+  const question = 'whose OSHA 30 expires this month';
+  const retried = await scriptedSearch(question, [
+    { status: 503 },
+    { model: OSHA_FILTER },
+  ], { sub: 'retry-503' });
+  assert.equal(retried.status, 200);
+  assert.equal(retried.body.enabled, true);
+  assert.equal(retried.body.filter.conditions[0].value, 'OSHA 30');
+  assert.equal(retried.body.filter.conditions[1].from, '2026-10-01');
+  assert.deepEqual(retried.models, ['gemini-3.5-flash', 'gemini-3.5-flash']);
+  assert.deepEqual(retried.sleeps, [400]);
+
+  const overloaded = await scriptedSearch(question, [
+    { status: 503 },
+    { status: 503 },
+    { status: 503 },
+    { model: OSHA_FILTER },
+  ], {
+    sub: 'fallback-lite',
+    env: geminiEnv({ GEMINI_MODEL: 'gemini-3.8-flash' }),
+  });
+  assert.equal(overloaded.status, 200);
+  assert.deepEqual(overloaded.models, [
+    'gemini-3.8-flash',
+    'gemini-3.8-flash',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+  ]);
+
+  const missing = await scriptedSearch(question, [
+    { status: 404 },
+    { model: OSHA_FILTER },
+  ], {
+    sub: 'fallback-404',
+    env: geminiEnv({ GEMINI_MODEL: 'gemini-3.8-flash' }),
+  });
+  assert.equal(missing.status, 200);
+  assert.deepEqual(missing.models, ['gemini-3.8-flash', 'gemini-3.5-flash']);
+});
+
+test('Gemini 429 stays on the same model, and a lasting outage is a clear 502', async () => {
+  resetRateLimits();
+  const question = 'whose OSHA 30 expires this month';
+  const limited = await scriptedSearch(question, [
+    { status: 429 },
+    { status: 429 },
+    { status: 429 },
+  ], { sub: 'gemini-429' });
+  assert.equal(limited.status, 502);
+  assert.deepEqual(limited.body, { error: 'Ask is temporarily unavailable. Try again in a moment.' });
+  assert.equal(JSON.stringify(limited.body).includes(question), false);
+  assert.deepEqual(limited.models, ['gemini-3.5-flash', 'gemini-3.5-flash', 'gemini-3.5-flash']);
+
+  const down = await scriptedSearch(question, [
+    { status: 503 },
+    { status: 503 },
+    { status: 503 },
+    { status: 503 },
+  ], { sub: 'gemini-down' });
+  assert.equal(down.status, 502);
+  assert.deepEqual(down.body, { error: 'Ask is temporarily unavailable. Try again in a moment.' });
+  assert.deepEqual(down.models, [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
+  ]);
 });
 
 test('directory search is rate limited per signed-in user', async () => {
@@ -221,6 +333,11 @@ test('the question is not logged with worker data', () => {
   const page = readFileSync(new URL('../js/pages/directory.js', import.meta.url), 'utf8');
   assert.equal(page.includes('directory-search.php'), true);
   assert.equal(page.includes('withWakeRetry'), true);
+  assert.equal(page.includes('Ask is temporarily unavailable. Try again in a moment.'), true);
+  assert.equal(page.includes('aiFailureText(res.status, body)'), true);
+  assert.equal(page.includes('status === 502 || status === 503'), true);
+  assert.equal(source.includes("const DEFAULT_MODEL = 'gemini-3.5-flash'"), true);
+  assert.equal(source.includes('gemini-3.8-flash'), false);
   const wrangler = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   assert.equal(wrangler.includes('/directory-search.php'), true);
   assert.equal(wrangler.includes('GEMINI_API_KEY'), true);

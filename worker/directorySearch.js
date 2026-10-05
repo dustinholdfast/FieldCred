@@ -7,7 +7,7 @@
 //
 // GEMINI_API_KEY is a Worker secret. When it is missing this returns
 // { enabled: false } and the directory keeps plain text search.
-// Optional GEMINI_MODEL overrides the default model id; it is not required.
+// Optional GEMINI_MODEL overrides the default model id (gemini-3.5-flash).
 
 import { enforceRateLimit } from './rate-limit.js';
 import { findTenantIn } from './endpoints.js';
@@ -22,7 +22,14 @@ import {
 export const DIRECTORY_SEARCH_LIMIT = { bucket: 'directory-search', max: 20, windowSeconds: 60 };
 const STAFF_ROLES = new Set(['admin', 'safety', 'gate']);
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODEL = 'gemini-3.5-flash';
+// Tried only after the primary model returns 503 or 404. The default is
+// already first, so a GEMINI_MODEL override that is overloaded or missing
+// falls through to it, then to the lite alias.
+const FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-flash-lite-latest'];
+const PRIMARY_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = [400, 900];
+const UNAVAILABLE_ERROR = 'Ask is temporarily unavailable. Try again in a moment.';
 const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 
 function decodeJwtPayload(token) {
@@ -110,6 +117,65 @@ function geminiRequestBody(question) {
   };
 }
 
+function fallbackModels(primary) {
+  const models = [];
+  for (const model of FALLBACK_MODELS) {
+    if (model !== primary && MODEL_ID.test(model)) models.push(model);
+  }
+  return models;
+}
+
+async function pause(deps, attempt) {
+  const ms = RETRY_BACKOFF_MS[Math.min(attempt, RETRY_BACKOFF_MS.length - 1)];
+  if (typeof deps.sleep === 'function') {
+    await deps.sleep(ms);
+    return;
+  }
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function postGemini(fetchImpl, model, apiKey, question) {
+  try {
+    const response = await fetchImpl(`${GEMINI_URL}/${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(geminiRequestBody(question)),
+      signal: AbortSignal.timeout(20000),
+    });
+    return { response, status: response.status };
+  } catch {
+    return { response: null, status: 0 };
+  }
+}
+
+// 503/429: retry the same model. 503/404: try the fallback list. Anything else
+// stops. The question is never written to the log.
+async function generateGemini(fetchImpl, primary, apiKey, question, deps) {
+  let status = 0;
+  for (let attempt = 0; attempt < PRIMARY_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) await pause(deps, attempt - 1);
+    const result = await postGemini(fetchImpl, primary, apiKey, question);
+    status = result.status;
+    if (result.response?.ok) return result;
+    console.error(`[directory-search] gemini failed — http: ${status}`);
+    if (status !== 503 && status !== 429) break;
+  }
+  if (status !== 503 && status !== 404) return { response: null, status };
+
+  for (const model of fallbackModels(primary)) {
+    await pause(deps, 0);
+    const result = await postGemini(fetchImpl, model, apiKey, question);
+    status = result.status;
+    if (result.response?.ok) return result;
+    console.error(`[directory-search] gemini failed — http: ${status}`);
+    if (status !== 503 && status !== 404) break;
+  }
+  return { response: null, status };
+}
+
 function parseGeminiContent(payload) {
   const parts = payload?.candidates?.[0]?.content?.parts;
   if (!Array.isArray(parts)) return null;
@@ -182,25 +248,11 @@ export async function directorySearchResult(request, env = {}, deps = {}) {
   const gemini = geminiConfig(env);
   if (!gemini.apiKey) return { status: 200, body: { enabled: false } };
 
-  let response;
-  try {
-    response = await fetchImpl(`${GEMINI_URL}/${encodeURIComponent(gemini.model)}:generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': gemini.apiKey,
-      },
-      body: JSON.stringify(geminiRequestBody(question)),
-      signal: AbortSignal.timeout(20000),
-    });
-  } catch {
-    console.error('[directory-search] gemini failed — http: 0');
-    return { status: 502, body: { error: 'Search is unavailable right now.' } };
+  const generated = await generateGemini(fetchImpl, gemini.model, gemini.apiKey, question, deps);
+  if (!generated.response?.ok) {
+    return { status: 502, body: { error: UNAVAILABLE_ERROR } };
   }
-  if (!response.ok) {
-    console.error(`[directory-search] gemini failed — http: ${response.status}`);
-    return { status: 502, body: { error: 'Search is unavailable right now.' } };
-  }
+  const response = generated.response;
 
   let payload;
   try {

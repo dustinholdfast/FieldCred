@@ -33,9 +33,14 @@ function plainHaystack(worker) {
   ].join(' ').toLowerCase();
 }
 
-function aiFailureText(status) {
+function aiFailureText(status, body) {
+  const fromWorker = typeof body?.error === 'string' ? body.error.trim() : '';
+  const safeWorker = fromWorker.length > 0 && fromWorker.length <= 160 && !/[\u0000-\u001f]/.test(fromWorker);
   if (status === 429) return 'Too many questions. Wait a moment and try again.';
-  if (status === 503) return 'The database is waking up. Try again in a moment.';
+  if (status === 502 || status === 503) {
+    if (safeWorker) return fromWorker;
+    return 'Ask is temporarily unavailable. Try again in a moment.';
+  }
   if (status === 400) return 'That question is too long.';
   return "That question couldn't be turned into a filter.";
 }
@@ -442,7 +447,7 @@ export async function renderDirectory(container, params, query) {
       if (!res.ok || !body.filter) {
         state.filter = null;
         state.aiNote = '';
-        state.aiError = aiFailureText(res.status);
+        state.aiError = aiFailureText(res.status, body);
         renderGrid();
         return;
       }

@@ -6,7 +6,7 @@
   // Google Gemini (Generative Language API) from this Worker.
   // GEMINI_API_KEY is required. When it is missing the endpoint returns
   // {"enabled":false} and the directory keeps plain text search.
-  // Optional GEMINI_MODEL overrides the default model id.
+  // Optional GEMINI_MODEL overrides the default model id (gemini-3.5-flash).
   //   npx wrangler secret put GEMINI_API_KEY
   //   npx wrangler secret put GEMINI_MODEL
   //   npx wrangler deploy
