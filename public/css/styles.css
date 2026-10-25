@@ -1213,6 +1213,38 @@ img { display: block; max-width: 100%; }
 .gate-log-tag.is-blocked { background: var(--expired-bg); color: var(--expired-text); }
 .gate-log-tag.is-unknown { background: var(--expiring-bg); color: var(--g-expiring-ink); }
 .gate-log-missing { font-size: 10.5px; line-height: 1.4; color: var(--expired-text); margin-top: 3px; }
+.gate-log-tags { flex: none; display: flex; gap: 4px; }
+.gate-log-dir {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border: var(--g-rule);
+}
+.gate-log-dir.is-out { background: var(--g-ink); color: #fff; }
+.gate-log-by { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--g-muted); margin-top: 3px; }
+.gate-app .gate-stat-link { background: transparent; border-top: 0; border-bottom: 0; border-left: 0; text-align: left; font: inherit; color: inherit; }
+.gate-stat-link:hover { background: var(--g-hover); }
+
+/* ENTRY / EXIT — big enough to hit with a gloved thumb, and the active side
+   is solid so the guard can read the mode from across the booth. */
+.gate-direction { display: flex; border: var(--g-rule); margin-bottom: 14px; }
+.gate-direction-btn {
+  flex: 1;
+  padding: 14px 0;
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.gate-direction-btn + .gate-direction-btn { border-left: var(--g-rule); }
+.gate-direction-btn:hover { background: var(--g-hover); }
+.gate-app .gate-direction-btn.is-active { background: var(--g-ink); color: #fff; }
+
+.gate-guard-row { display: flex; gap: 8px; margin-top: 6px; }
+.gate-guard-row .gate-input { flex: 1; min-width: 0; }
+.gate-guard-save { flex: none; border: var(--g-rule); background: var(--g-ink); color: #fff; padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
 
 .gate-tabs { display: flex; flex: none; border-top: var(--g-rule); }
 .gate-tab {

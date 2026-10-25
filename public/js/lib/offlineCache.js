@@ -113,8 +113,28 @@ export async function getCachedSite(slug) {
 }
 
 // ---- offline scan queue ----
-export async function queueScan(siteSlug, workerSlug) {
-  await write(STORE_SCAN_QUEUE, (store) => store.add({ siteSlug, workerSlug, queuedAt: new Date().toISOString() }));
+// `meta` is gateSession.scanMeta(): direction, deviceId, guardLabel. Queued
+// rows from before it existed have none, and sync treats them as entries.
+export async function queueScan(siteSlug, workerSlug, { direction = 'in', deviceId = null, guardLabel = null } = {}) {
+  await write(STORE_SCAN_QUEUE, (store) => store.add({
+    siteSlug,
+    workerSlug,
+    direction,
+    deviceId,
+    guardLabel,
+    queuedAt: new Date().toISOString(),
+  }));
+}
+
+// The recordGateScan options for a queued row. Scans queued before
+// direction/device/guard were recorded carry none of them; those were all
+// entries.
+export function queuedScanMeta(scan) {
+  return {
+    direction: scan?.direction === 'out' ? 'out' : 'in',
+    deviceId: scan?.deviceId || null,
+    guardLabel: scan?.guardLabel || null,
+  };
 }
 
 export async function getQueuedScans() {

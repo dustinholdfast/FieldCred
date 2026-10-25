@@ -37,20 +37,28 @@ import { store } from '../lib/state.js';
 import { warmDatabase, WAKING_TITLE, withWakeRetry } from '../lib/wake.js';
 import { buildVerdict, resolveSite, shortExpiry, VERDICT } from '../lib/gateVerdict.js';
 import {
+  GUARD_LABEL_MAX,
   MODE_GUARD,
   MODE_SUPERVISOR,
   PIN_LENGTH,
   clearPairedSlug,
   clearPin,
+  getDeviceId,
+  getDirection,
+  getGuardLabel,
   getMode,
   getPairedSlug,
   hasPin,
   queuedScanCount,
+  scanMeta,
+  setDirection,
+  setGuardLabel,
   setMode,
   setPairedSlug,
   setPin,
   verifyPin,
 } from '../lib/gateSession.js';
+import { DIRECTION_OUT, onSiteNow, scanStats, startOfLocalDay } from '../lib/presence.js';
 
 // Haptics. A gate is loud, often gloved, and the guard is looking at the
 // worker rather than the screen — the buzz is frequently the only feedback
@@ -119,8 +127,20 @@ function siteLabel(site, pairedSlug) {
 
 // ---------- screens -------------------------------------------------------
 
+// ENTRY / EXIT for this tablet. It stays put between scans, so a gate that
+// only ever sees one direction sets it once; a shared gate flips it per queue.
+function directionToggleHtml(ctx) {
+  const out = ctx.direction === DIRECTION_OUT;
+  return `
+    <div class="gate-direction" role="group" aria-label="Scan direction">
+      <button class="gate-direction-btn ${out ? '' : 'is-active'}" type="button" data-action="direction" data-direction="in" aria-pressed="${!out}">ENTRY</button>
+      <button class="gate-direction-btn ${out ? 'is-active' : ''}" type="button" data-action="direction" data-direction="out" aria-pressed="${out}">EXIT</button>
+    </div>`;
+}
+
 function guardHomeHtml(ctx) {
   const label = siteLabel(ctx.site, ctx.pairedSlug);
+  const out = ctx.direction === DIRECTION_OUT;
   return `
     <div class="gate-screen">
       <div class="gate-header">
@@ -140,9 +160,10 @@ function guardHomeHtml(ctx) {
           : `<div class="gate-unpaired-note">This device isn't paired to a site yet. Scan the QR posted at the gate — verdicts can't be issued until it is.</div>`
       }
       <div class="gate-body gate-body-guard">
+        ${directionToggleHtml(ctx)}
         <button class="gate-scan-target" type="button" data-action="scanner">
           <span class="gate-reticle" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <span class="gate-scan-target-label">TAP TO SCAN A BADGE<span aria-hidden="true">→</span></span>
+          <span class="gate-scan-target-label">${out ? 'TAP TO SCAN OUT' : 'TAP TO SCAN A BADGE'}<span aria-hidden="true">→</span></span>
         </button>
         ${arrowButtonHtml('LOOK UP BY NAME', 'lookup', 'outline')}
       </div>
@@ -158,7 +179,9 @@ function scannerHtml(ctx) {
     <div class="gate-screen gate-screen-dark">
       ${topBarHtml('SCAN BADGE', { tone: 'dark' })}
       <div class="gate-scanner-strip">${escapeHtml(
-        `${ctx.offline ? '● OFFLINE · ' : ''}CHECKING AGAINST ${label.toUpperCase()}`
+        `${ctx.offline ? '● OFFLINE · ' : ''}${
+          ctx.direction === DIRECTION_OUT ? `EXIT · SIGNING OUT AT ${label.toUpperCase()}` : `ENTRY · CHECKING AGAINST ${label.toUpperCase()}`
+        }`
       )}</div>
       <div class="gate-viewport">
         <video class="gate-video" playsinline muted autoplay></video>
@@ -329,6 +352,47 @@ function neutralVerdictHtml(v, ctx, { headline, body }) {
     </div>`;
 }
 
+// True when this verdict should render as a sign-out: an exit by a worker this
+// site could actually check. An exit against an unrecognized site still gets
+// the SITE NOT RECOGNIZED screen (and its buzz), same as an entry would.
+function isSignOut(v) {
+  return v.direction === DIRECTION_OUT && Boolean(v.worker)
+    && (v.kind === VERDICT.CLEARED || v.kind === VERDICT.BLOCKED || v.kind === VERDICT.NO_REQUIREMENTS);
+}
+
+// An exit isn't a clearance decision — nobody is stopped from leaving — so a
+// recognized worker scanning out gets a confirmation, not a verdict poster.
+// The clearance check still ran (the server logs it either way); if it failed,
+// the guard sees a one-line note so a lapsed card doesn't go unmentioned.
+function signedOutHtml(v) {
+  const note = v.kind === VERDICT.BLOCKED
+    ? `<div class="gate-note gate-note-warn">⌁ Not cleared for this site — ${escapeHtml(v.missing.map((m) => m.line).join('; ') || 'credentials not current')}. Tell their supervisor.</div>`
+    : '';
+  return `
+    <div class="gate-screen">
+      ${topBarHtml('FIELDCRED GATE')}
+      <div class="gate-body gate-body-scroll">
+        ${verdictKickerHtml(v)}
+        <div class="gate-headline gate-headline-neutral">SIGNED<br>OUT</div>
+        <div class="gate-rule"></div>
+        <div class="gate-worker-row gate-worker-record">
+          ${recordPhotoHtml(v.worker, 'gate-avatar gate-avatar-record')}
+          <div>
+            <div class="gate-worker-name">${escapeHtml(v.worker?.name || '')}</div>
+            <div class="gate-worker-sub">${escapeHtml(workerSubline(v.worker))}</div>
+          </div>
+        </div>
+        <div class="gate-copy">Exit recorded at ${escapeHtml(formatTime(v.at))}. They no longer count as on site.</div>
+        ${note}
+        ${cachedNoteHtml(v, 'gate-note gate-note-warn')}
+      </div>
+      <div class="gate-verdict-footer">
+        <div class="gate-audit-line">${escapeHtml(auditLineHtml(v, 'SHORT BUZZ'))}</div>
+        ${arrowButtonHtml('SCAN NEXT', 'scanner', 'solid')}
+      </div>
+    </div>`;
+}
+
 function workerSubline(worker) {
   if (!worker) return '';
   return [worker.title, worker.department].filter(Boolean).join(' · ');
@@ -455,13 +519,44 @@ function logRowHtml(scan, { withMissing = false } = {}) {
     withMissing && scan.missingTypes.length
       ? `<div class="gate-log-missing">Missing: ${escapeHtml(scan.missingTypes.map((t) => t.name).join(', '))}</div>`
       : '';
+  const out = scan.direction === DIRECTION_OUT;
+  const by = withMissing && (scan.guardLabel || scan.deviceId)
+    ? `<div class="gate-log-by">${escapeHtml([scan.guardLabel, scan.deviceId].filter(Boolean).join(' · '))}</div>`
+    : '';
   return `<div class="gate-log-row">
     <div class="gate-log-line">
       <span class="gate-log-who">${escapeHtml(formatTime(scan.scannedAt))} · ${escapeHtml(who)}</span>
-      <span class="gate-log-tag ${meta.className}">${escapeHtml(meta.label)}</span>
+      <span class="gate-log-tags">
+        <span class="gate-log-dir ${out ? 'is-out' : ''}">${out ? 'OUT' : 'IN'}</span>
+        <span class="gate-log-tag ${meta.className}">${escapeHtml(meta.label)}</span>
+      </span>
     </div>
     ${missing}
+    ${by}
   </div>`;
+}
+
+function onSiteHtml(ctx) {
+  const rows = ctx.onSite
+    .map((p) => `<div class="gate-log-row">
+      <div class="gate-log-line">
+        <span class="gate-log-who">${escapeHtml(p.workerName)}</span>
+        <span class="gate-log-tag is-cleared">IN ${escapeHtml(formatTime(p.inAt))}</span>
+      </div>
+    </div>`)
+    .join('');
+  return `
+    <div class="gate-sup-title">On site now · ${ctx.onSite.length}</div>
+    <div class="gate-sup-sub">Everyone whose last scan today at this gate was a cleared entry — use it as the roll-call in an evacuation. Someone who left without scanning out still shows here; a blocked entry never does.</div>
+    <div class="gate-log-list">
+      ${rows || '<div class="gate-lookup-empty">No one has been cleared in at this gate today.</div>'}
+    </div>
+    ${ctx.stats.exits ? `<div class="gate-note">${ctx.stats.exits} exit${ctx.stats.exits > 1 ? 's' : ''} scanned today.</div>` : ''}
+    ${
+      ctx.queued
+        ? `<div class="gate-note gate-note-warn">● ${ctx.queued} offline scan${ctx.queued > 1 ? 's' : ''} not yet synced — this list doesn't include them.</div>`
+        : ''
+    }`;
 }
 
 function supervisorHtml(ctx) {
@@ -478,6 +573,7 @@ function supervisorHtml(ctx) {
           <div class="gate-stat"><div class="gate-stat-value">${ctx.stats.total}</div><div class="gate-kicker">SCANS TODAY</div></div>
           <div class="gate-stat"><div class="gate-stat-value is-cleared">${ctx.stats.cleared}</div><div class="gate-kicker">CLEARED</div></div>
           <div class="gate-stat"><div class="gate-stat-value is-blocked">${ctx.stats.blocked}</div><div class="gate-kicker">BLOCKED</div></div>
+          <button class="gate-stat gate-stat-link" type="button" data-action="tab" data-tab="onsite"><div class="gate-stat-value">${ctx.onSite.length}</div><div class="gate-kicker">ON SITE →</div></button>
         </div>
         ${arrowButtonHtml('SCAN A BADGE', 'scanner', 'solid')}
         <div>
@@ -491,6 +587,8 @@ function supervisorHtml(ctx) {
           </div>
         </div>
       </div>`;
+  } else if (tab === 'onsite') {
+    body = onSiteHtml(ctx);
   } else if (tab === 'log') {
     body = `
       <div class="gate-sup-title">Scan log</div>
@@ -520,6 +618,14 @@ function supervisorHtml(ctx) {
         }
       </div>
       <div class="gate-note">A worker is cleared only when every required type is met by a valid or expiring credential — never an expired one, never one with no date.</div>
+      <div class="gate-kicker gate-kicker-spaced">THIS DEVICE</div>
+      <label class="gate-lookup-hint" for="gate-guard-input">Guard on duty — written on every scan from this tablet</label>
+      <div class="gate-guard-row">
+        <input class="gate-input" id="gate-guard-input" type="text" maxlength="${GUARD_LABEL_MAX}" autocomplete="off" placeholder="e.g. M. Reyes, day shift" value="${escapeHtml(ctx.guardLabel)}">
+        <button class="gate-guard-save" type="button" data-action="save-guard">SAVE</button>
+      </div>
+      ${ctx.guardSaved ? '<div class="gate-lookup-hint">✓ Saved.</div>' : ''}
+      <div class="gate-lookup-hint">Device ID ${escapeHtml(ctx.deviceId)} · scanning as ${ctx.direction === DIRECTION_OUT ? 'EXIT' : 'ENTRY'}</div>
       ${arrowButtonHtml('CHANGE PAIRED SITE', 'pairing', 'outline')}
       ${arrowButtonHtml('RETURN TO GATE MODE', 'return-gate', 'solid')}`;
   }
@@ -537,6 +643,7 @@ function supervisorHtml(ctx) {
       <div class="gate-body gate-body-scroll">${body}</div>
       <div class="gate-tabs">
         <button class="gate-tab ${tab === 'home' ? 'is-active' : ''}" type="button" data-action="tab" data-tab="home">HOME</button>
+        <button class="gate-tab ${tab === 'onsite' ? 'is-active' : ''}" type="button" data-action="tab" data-tab="onsite">ON SITE</button>
         <button class="gate-tab" type="button" data-action="lookup">LOOKUP</button>
         <button class="gate-tab ${tab === 'log' ? 'is-active' : ''}" type="button" data-action="tab" data-tab="log">LOG</button>
         <button class="gate-tab ${tab === 'site' ? 'is-active' : ''}" type="button" data-action="tab" data-tab="site">SITE</button>
@@ -584,7 +691,12 @@ export async function renderGateApp(container, _params, query) {
     pin: '',
     pinError: '',
     scans: [],
-    stats: { total: 0, cleared: 0, blocked: 0 },
+    stats: { total: 0, cleared: 0, blocked: 0, exits: 0 },
+    onSite: [],
+    direction: getDirection(),
+    deviceId: getDeviceId(),
+    guardLabel: getGuardLabel(),
+    guardSaved: false,
     logError: '',
     session: null,
     userName: '',
@@ -703,14 +815,25 @@ export async function renderGateApp(container, _params, query) {
     ctx.logError = '';
     if (!ctx.site?.id) {
       ctx.scans = [];
-      ctx.stats = { total: 0, cleared: 0, blocked: 0 };
+      ctx.stats = { total: 0, cleared: 0, blocked: 0, exits: 0 };
+      ctx.onSite = [];
       ctx.logError = ctx.pairedSlug
         ? "This site isn't reachable right now, so its scan log can't be loaded."
         : 'Pair this device to a site to see its scan log.';
       return;
     }
+    // "Today" is the device's local day, which is the same day the guard is
+    // working — the audit page (js/pages/siteScanLog.js) shows everything, so
+    // this is a shift-shaped summary, not a second source of truth. Today's
+    // scans are fetched on their own so the stats and the on-site list cover
+    // the whole day, not just the newest 200 rows the log tab shows.
+    const since = startOfLocalDay();
+    let today;
     try {
-      ctx.scans = await withWakeRetry(() => store.siteScanLog(ctx.site.id), {
+      [ctx.scans, today] = await withWakeRetry(() => Promise.all([
+        store.siteScanLog(ctx.site.id),
+        store.siteScanLog(ctx.site.id, { from: since.toISOString(), limit: 2000 }),
+      ]), {
         onWaiting() {
           ctx.logError = WAKING_TITLE;
           if (!disposed && ctx.screen === 'supHome') render();
@@ -719,6 +842,7 @@ export async function renderGateApp(container, _params, query) {
       ctx.logError = '';
     } catch (err) {
       ctx.scans = [];
+      ctx.onSite = [];
       // The one failure worth naming specifically: the supervisor's session
       // lapsed. RLS grants gate_scans to authenticated only, so this reads as
       // an empty log rather than an error unless we say what happened.
@@ -727,17 +851,8 @@ export async function renderGateApp(container, _params, query) {
         : "Couldn't load the scan log. The database didn't respond.";
       return;
     }
-    // "Today" is the device's local day, which is the same day the guard is
-    // working — the audit page (js/pages/siteScanLog.js) shows everything, so
-    // this is a shift-shaped summary, not a second source of truth.
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const today = ctx.scans.filter((s) => new Date(s.scannedAt) >= startOfDay);
-    ctx.stats = {
-      total: today.length,
-      cleared: today.filter((s) => s.result === 'cleared').length,
-      blocked: today.filter((s) => s.result === 'blocked').length,
-    };
+    ctx.stats = scanStats(today, { since });
+    ctx.onSite = onSiteNow(today, { since });
   }
 
   async function loadPairingSites() {
@@ -837,6 +952,7 @@ export async function renderGateApp(container, _params, query) {
   function verdictHtml() {
     const v = ctx.verdict;
     if (!v) return guardHomeHtml(ctx);
+    if (isSignOut(v)) return signedOutHtml(v);
     switch (v.kind) {
       case VERDICT.CLEARED:
         return clearedHtml(v, ctx);
@@ -1010,12 +1126,13 @@ export async function renderGateApp(container, _params, query) {
 
     const verdict = await buildVerdict(ctx.pairedSlug, workerSlug, {
       via,
+      scan: scanMeta(),
       onWaiting() {
         const el = container.querySelector('#gate-hint');
         if (el) el.textContent = WAKING_TITLE;
       },
     });
-    buzz(verdict.kind === VERDICT.CLEARED ? BUZZ.cleared : verdict.kind === VERDICT.BLOCKED ? BUZZ.blocked : BUZZ.unknown);
+    buzz(isSignOut(verdict) || verdict.kind === VERDICT.CLEARED ? BUZZ.cleared : verdict.kind === VERDICT.BLOCKED ? BUZZ.blocked : BUZZ.unknown);
 
     ctx.verdict = verdict;
     ctx.offline = verdict.fromCache || verdict.noSignal || !navigator.onLine;
@@ -1250,12 +1367,27 @@ export async function renderGateApp(container, _params, query) {
 
       case 'tab':
         ctx.supTab = el.dataset.tab;
+        ctx.guardSaved = false;
         render();
-        if (ctx.supTab === 'home' || ctx.supTab === 'log') {
+        if (ctx.supTab === 'home' || ctx.supTab === 'log' || ctx.supTab === 'onsite') {
           await loadScanLog();
           render();
         }
         break;
+
+      case 'direction':
+        setDirection(el.dataset.direction);
+        ctx.direction = getDirection();
+        render();
+        break;
+
+      case 'save-guard': {
+        const input = container.querySelector('#gate-guard-input');
+        ctx.guardLabel = setGuardLabel(input ? input.value : '');
+        ctx.guardSaved = true;
+        render();
+        break;
+      }
 
       case 'return-gate':
         setMode(MODE_GUARD);

@@ -27,6 +27,7 @@
 // Do not let this file grow into something that reads like real auth.
 
 import { getQueuedScans } from './offlineCache.js';
+import { DIRECTION_IN, DIRECTION_OUT } from './presence.js';
 
 // Existing key, shared with js/pages/gateConfig.js, js/pages/publicRecord.js
 // and js/pages/scan.js. DO NOT RENAME — a device paired by scanning a gate QR
@@ -34,6 +35,9 @@ import { getQueuedScans } from './offlineCache.js';
 const GATE_KEY = 'fieldcred_gate_site';
 const MODE_KEY = 'fieldcred_gate_mode';
 const PIN_KEY = 'fieldcred_gate_pin';
+const DIRECTION_KEY = 'fieldcred_gate_direction';
+const DEVICE_KEY = 'fieldcred_gate_device';
+const GUARD_KEY = 'fieldcred_gate_guard';
 
 export const MODE_GUARD = 'guard';
 export const MODE_SUPERVISOR = 'supervisor';
@@ -90,6 +94,64 @@ export function getMode() {
 
 export function setMode(mode) {
   write(MODE_KEY, mode === MODE_SUPERVISOR ? MODE_SUPERVISOR : MODE_GUARD);
+}
+
+// ---- scan context ----------------------------------------------------------
+// Written onto every gate_scans row so the log can answer "which tablet, which
+// guard, in or out" — and so presence.js can tell who is still on site.
+
+// Entry is the default and the fail-safe, the same way guard is for mode: an
+// absent or corrupted value means scans count as entries, which is how every
+// scan was recorded before direction existed.
+export function getDirection() {
+  return read(DIRECTION_KEY) === DIRECTION_OUT ? DIRECTION_OUT : DIRECTION_IN;
+}
+
+export function setDirection(direction) {
+  write(DIRECTION_KEY, direction === DIRECTION_OUT ? DIRECTION_OUT : DIRECTION_IN);
+}
+
+// A random id minted once per device. Not a secret and not an identity check —
+// just enough to tell two tablets at the same gate apart in the log. If
+// storage is unavailable the id lasts for this page load only.
+let memoDeviceId = null;
+
+export function getDeviceId() {
+  const stored = read(DEVICE_KEY);
+  if (stored && /^gate-[a-f0-9]{10}$/.test(stored)) return stored;
+  if (memoDeviceId) return memoDeviceId;
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  memoDeviceId = `gate-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+  write(DEVICE_KEY, memoDeviceId);
+  return memoDeviceId;
+}
+
+export const GUARD_LABEL_MAX = 60;
+
+export function cleanGuardLabel(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, GUARD_LABEL_MAX);
+}
+
+// Who is on duty at this tablet, as a supervisor typed it. Free text and
+// self-reported: it labels log rows, it doesn't authenticate anyone.
+export function getGuardLabel() {
+  return cleanGuardLabel(read(GUARD_KEY));
+}
+
+export function setGuardLabel(label) {
+  const clean = cleanGuardLabel(label);
+  if (clean) write(GUARD_KEY, clean);
+  else remove(GUARD_KEY);
+  return clean;
+}
+
+export function scanMeta() {
+  return {
+    direction: getDirection(),
+    deviceId: getDeviceId(),
+    guardLabel: getGuardLabel() || null,
+  };
 }
 
 // ---- PIN -----------------------------------------------------------------
