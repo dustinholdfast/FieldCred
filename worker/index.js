@@ -813,6 +813,132 @@ async function handleSignup(request, env, fetchImpl, now) {
   return json(200, { ok: true });
 }
 __name(handleSignup, "handleSignup");
+
+// worker/monitoring.js
+// Client error collection and health checks. Everything here reports through
+// console.error with a fixed [prefix] so failures land in Workers Logs, where
+// they can be searched and alerted on; nothing is stored.
+var CLIENT_ERROR_LIMIT = { bucket: "client-error", max: 30, windowSeconds: 60 };
+var HEALTH_EMAIL_LIMIT = { bucket: "health-email", max: 10, windowSeconds: 3600 };
+var CLIENT_ERROR_KINDS = /* @__PURE__ */ new Set(["error", "unhandledrejection"]);
+var CLIENT_ERROR_MAX_BYTES = 8192;
+var MONITOR_RECIPIENT = "delivered@resend.dev";
+function oneLine(value, maxLen) {
+  return cleanField(typeof value === "string" ? value.replace(/\s+/g, " ") : "", maxLen);
+}
+__name(oneLine, "oneLine");
+function reportedPage(value) {
+  try {
+    const url = new URL(String(value));
+    return Array.from(url.pathname + url.hash).slice(0, 300).join("");
+  } catch {
+    return "";
+  }
+}
+__name(reportedPage, "reportedPage");
+async function handleClientError(request, now) {
+  if (request.method !== "POST") {
+    return json(405, { error: "Method not allowed" });
+  }
+  const origin = request.headers.get("Origin");
+  if (origin && origin !== new URL(request.url).origin) return forbidden();
+  const limit = enforceRateLimit(clientIp(request), CLIENT_ERROR_LIMIT.bucket, CLIENT_ERROR_LIMIT.max, CLIENT_ERROR_LIMIT.windowSeconds, now);
+  if (limit.limited) return limited(limit.retryAfter);
+  const text = await request.text();
+  if (text.length > CLIENT_ERROR_MAX_BYTES) return json(413, { error: "Report too large" });
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = null;
+  }
+  if (body === null || typeof body !== "object" || !CLIENT_ERROR_KINDS.has(body.kind)) {
+    return json(400, { error: "Invalid report" });
+  }
+  const message = oneLine(body.message, 500) || "(no message)";
+  const stack = cleanField(typeof body.stack === "string" ? body.stack.replace(/[\r\n]+/g, " | ") : "", 2e3);
+  console.error(
+    `[client-error] ${body.kind} — ${message} — page: ${reportedPage(body.url) || "?"} — ua: ${oneLine(body.ua, 200) || "?"}` + (stack ? ` — stack: ${stack}` : "")
+  );
+  return new Response(null, { status: 204, headers: new Headers(SECURITY_HEADERS2) });
+}
+__name(handleClientError, "handleClientError");
+function resendConfigured(env) {
+  const apiKey = String(env.RESEND_API_KEY || "").trim();
+  return Boolean(apiKey && apiKey !== "YOUR_RESEND_API_KEY" && env.RESEND_FROM);
+}
+__name(resendConfigured, "resendConfigured");
+function handleHealth(request, env, tenants) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return json(405, { error: "Method not allowed" });
+  }
+  const checks = {
+    assets: Boolean(env.ASSETS && typeof env.ASSETS.fetch === "function"),
+    tenants: tenants.length > 0,
+    signupEmail: resendConfigured(env) && Boolean(env.NOTIFY_EMAIL),
+    directorySearch: Boolean(String(env.GEMINI_API_KEY || "").trim())
+  };
+  const ok = Object.values(checks).every(Boolean);
+  if (!ok) console.error(`[health] failing checks: ${Object.keys(checks).filter((k) => !checks[k]).join(", ")}`);
+  return json(ok ? 200 : 503, { ok, checks });
+}
+__name(handleHealth, "handleHealth");
+function sameSecret(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+__name(sameSecret, "sameSecret");
+async function handleHealthEmail(request, env, fetchImpl, now) {
+  const token = String(env.MONITOR_TOKEN || "").trim();
+  if (!token) return json(404, { error: "Not found" });
+  if (request.method !== "POST") {
+    return json(405, { error: "Method not allowed" });
+  }
+  const auth = request.headers.get("Authorization") || "";
+  if (!sameSecret(auth, `Bearer ${token}`)) return json(401, { error: "Unauthorized" });
+  const limit = enforceRateLimit(clientIp(request), HEALTH_EMAIL_LIMIT.bucket, HEALTH_EMAIL_LIMIT.max, HEALTH_EMAIL_LIMIT.windowSeconds, now);
+  if (limit.limited) return limited(limit.retryAfter);
+  if (!resendConfigured(env)) {
+    console.error("[health-email] Resend is not configured");
+    return json(503, { ok: false, error: "Resend is not configured" });
+  }
+  let response;
+  let responseText = "";
+  try {
+    response = await fetchImpl("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${String(env.RESEND_API_KEY).trim()}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: env.RESEND_FROM,
+        to: MONITOR_RECIPIENT,
+        subject: "FieldCred monitor check",
+        text: "Automated check that the Resend key and sending domain still work. Sent to Resend's test inbox; nobody receives it."
+      }),
+      signal: AbortSignal.timeout(15e3)
+    });
+    responseText = await response.text();
+  } catch (err) {
+    console.error(`[health-email] Resend unreachable — ${err && err.message ? err.message : "none"}`);
+    return json(502, { ok: false, status: 0, error: "Resend unreachable" });
+  }
+  if (response.status >= 300) {
+    let detail = "";
+    try {
+      detail = JSON.parse(responseText).message || "";
+    } catch {
+      detail = responseText;
+    }
+    console.error(`[health-email] Resend rejected — http: ${response.status} — ${oneLine(detail, 300)}`);
+    return json(502, { ok: false, status: response.status, error: oneLine(detail, 300) });
+  }
+  return json(200, { ok: true });
+}
+__name(handleHealthEmail, "handleHealthEmail");
 async function handleRequest(request, env = {}, deps = {}) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -823,6 +949,9 @@ async function handleRequest(request, env = {}, deps = {}) {
   if (path === "/tenant-lookup.php") return handleTenantLookup(request, now, tenants);
   if (path === "/tenant-lookup-by-domain.php") return handleTenantLookupByDomain(request, now, tenants);
   if (path === "/signup-notify.php") return handleSignup(request, env, fetchImpl, now);
+  if (path === "/api/client-error") return handleClientError(request, now);
+  if (path === "/api/health") return handleHealth(request, env, tenants);
+  if (path === "/api/health/email") return handleHealthEmail(request, env, fetchImpl, now);
   if (path === "/file.php") {
     const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
     return handleFile(request, tenants, fetchImpl, nowMs);

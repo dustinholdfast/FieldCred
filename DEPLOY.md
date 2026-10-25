@@ -38,6 +38,7 @@ in this repo and never should be — this repo is public. Set them with
 | `RESEND_API_KEY` | secret | signup / capacity-request emails |
 | `GEMINI_API_KEY` | secret | AI directory search |
 | `GEMINI_MODEL` | secret | AI directory search model id |
+| `MONITOR_TOKEN` | secret | unlocks `POST /api/health/email`; same value as the GitHub secret below |
 | `NOTIFY_EMAIL` | var (`wrangler.json`) | where signup requests go |
 | `RESEND_FROM` | var (`wrangler.json`) | sender address |
 
@@ -51,6 +52,46 @@ tag in `public/index.html`.
 `Permissions-Policy` must keep `camera=(self)`. An empty `camera=()`
 disables the gate scanner on every device, and no browser setting can
 override it.
+
+---
+
+## CI and monitoring
+
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and push to
+  `main`: unit tests, a parse check of the Worker and monitor scripts, and
+  `wrangler deploy --dry-run`. It needs no Cloudflare credentials.
+- **Monitor** (`.github/workflows/monitor.yml`) runs `scripts/monitor.sh`
+  against production every 30 minutes: app shell, camera header, tenant
+  lookup, auth on directory search, signup validation, and `/api/health`.
+  Once a day it also asks the Worker to send one message to Resend's test
+  inbox (`delivered@resend.dev`), which proves the API key and sending domain
+  still work without emailing anyone. A failed run makes GitHub email the repo
+  owner; that email is the alert. Run it by hand from the Actions tab
+  ("Monitor" → Run workflow) or locally with `bash scripts/monitor.sh`.
+
+  The daily email check needs the same random value in two places:
+
+  ```sh
+  npx wrangler secret put MONITOR_TOKEN          # Worker
+  gh secret set MONITOR_TOKEN                    # GitHub Actions
+  ```
+
+  Without it the check is skipped with a warning; everything else still runs.
+  GitHub only runs schedules from `main`, and pauses them after 60 days with
+  no repository activity.
+
+- **Worker logs**: `observability` is enabled in `wrangler.json`, so
+  `console.error` output is kept in Workers Logs (dashboard → Workers →
+  fieldcred → Logs). Failures use fixed prefixes worth searching or alerting
+  on: `[signup-notify]`, `[health]`, `[health-email]`, `[client-error]`,
+  `[directory-search]`.
+- **Client errors**: `public/js/lib/errorReporting.js` posts uncaught errors
+  and unhandled rejections to `POST /api/client-error`. The Worker logs one
+  line each, with the page path and hash, never the query string. Rate
+  limited to 30 per minute per IP.
+- **`GET /api/health`** reports which pieces are configured (assets, tenant
+  registry, signup email, directory search) as booleans, never values. It
+  returns 503 if any are missing.
 
 ---
 

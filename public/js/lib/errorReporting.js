@@ -1,14 +1,14 @@
 // Lightweight global error capture. The app previously had no visibility into
 // client-side failures — an error on a tenant's device just vanished. This
 // installs window 'error'/'unhandledrejection' handlers so failures are at
-// least logged consistently, and forwards them to an optional endpoint if one
-// is configured (set REPORT_ENDPOINT, or point it at Sentry's `/api/…/store/`
-// or a small PHP collector). With no endpoint it's a no-op beyond console.
+// least logged consistently, and forwards them to REPORT_ENDPOINT — the
+// Worker's /api/client-error route, which writes each report to Workers Logs
+// under a [client-error] prefix. Set it to '' to keep reports console-only.
 //
 // Deliberately dependency-free and fire-and-forget: reporting must never throw
 // or block the app, and it must not need a bundler or an SDK.
 
-const REPORT_ENDPOINT = ''; // e.g. './client-error.php' or a Sentry ingest URL. Empty = console only.
+const REPORT_ENDPOINT = './api/client-error';
 const MAX_REPORTS = 20; // per page load — a runaway loop shouldn't spam the endpoint
 
 let sent = 0;

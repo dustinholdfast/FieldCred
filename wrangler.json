@@ -23,8 +23,12 @@
       "/tenants.php",
       "/signup-config.php",
       "/rate-limit.php",
-      "/directory-search.php"
+      "/directory-search.php",
+      "/api/*"
     ]
+  },
+  "observability": {
+    "enabled": true
   },
   "vars": {
     "NOTIFY_EMAIL": "dustin@fieldcred.co",
