@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "FieldCred — workforce credential platform (no build step; static ES modules + Supabase).",
+  "description": "FieldCred — workforce credential platform (static ES modules in public/, Cloudflare Worker in worker/, Neon).",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "dev": "wrangler dev",
+    "deploy:dry": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2"

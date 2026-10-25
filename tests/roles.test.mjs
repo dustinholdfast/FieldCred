@@ -7,7 +7,7 @@ import {
   roleLabel,
   roleCan,
   isPermissionError,
-} from '../js/lib/roles.js';
+} from '../public/js/lib/roles.js';
 
 // --- normalizeRole: unknown/absent -> admin (the deploy-safe default) ---
 

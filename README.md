@@ -7,6 +7,13 @@ public QR-shareable mobile record. Built from the Claude Design handoff
 Ships as a website and, from the same code, as an installable app — including
 an Android build on the Play Store. See [Android app](#android-app).
 
+> **Production layout (since October 2026):** the app is served by a
+> Cloudflare Worker (`worker/index.js`) with the static site in `public/`,
+> and tenant data lives in Neon. See `DEPLOY.md`. Sections below that
+> describe Supabase, the PHP tenant registry, or root-level `js/` paths
+> predate that move: the code they describe is now under `public/js/`, and
+> the Supabase material is kept in `supabase/` for reference.
+
 ## Stack & why
 
 No build step: vanilla JS (ES modules) + hash-based client routing, no framework.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCertText, normalizeDateString } from '../js/lib/certParse.js';
+import { parseCertText, normalizeDateString } from '../public/js/lib/certParse.js';
 
 test('normalizeDateString accepts common formats, blanks, and rejects junk', () => {
   assert.equal(normalizeDateString('2028-06-02'), '2028-06-02'); // already ISO

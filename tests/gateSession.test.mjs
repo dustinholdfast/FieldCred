@@ -43,7 +43,7 @@ const {
   setPairedSlug,
   setPin,
   verifyPin,
-} = await import('../js/lib/gateSession.js');
+} = await import('../public/js/lib/gateSession.js');
 
 test.beforeEach(() => {
   installStorage(memoryStorage());

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseScannedCode } from '../js/lib/qrScanner.js';
+import { parseScannedCode } from '../public/js/lib/qrScanner.js';
 
 // Only parseScannedCode is exercised here — it's the pure half of
 // qrScanner.js. The camera/decode half needs getUserMedia and a real video

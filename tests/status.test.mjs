@@ -5,8 +5,9 @@ import {
   summarizeCertStatuses,
   workerNeedsRenewal,
   isCompliant,
+  summarizeCredentialHealth,
   RENEWAL_WINDOW_DAYS,
-} from '../js/lib/status.js';
+} from '../public/js/lib/status.js';
 
 // Base everything on the real clock: summarizeCertStatuses / workerNeedsRenewal
 // / isCompliant classify against new Date() internally (no injectable "today"),
@@ -62,7 +63,20 @@ test('workerNeedsRenewal is true when a cert is expiring, expired, or missing a 
   assert.equal(workerNeedsRenewal({ certifications: [{ expiryDate: daysFromNow(365) }] }), false);
 });
 
-test('isCompliant is false only when something is expired', () => {
+test('current evidence requires certificates with dates and no expired certificates', () => {
   assert.equal(isCompliant({ certifications: [{ expiryDate: daysFromNow(365) }] }), true);
   assert.equal(isCompliant({ certifications: [{ expiryDate: daysFromNow(-1) }] }), false);
+});
+
+test('empty and undated records never count as current evidence', () => {
+  assert.equal(isCompliant({ certifications: [] }), false);
+  assert.equal(isCompliant({ certifications: [{ expiryDate: '' }] }), false);
+  assert.equal(isCompliant({ certifications: [{ expiryDate: daysFromNow(5) }] }), true);
+  assert.deepEqual(summarizeCredentialHealth([{ certifications: [] }]), { current: 0, notAssessed: 1, total: 1, percent: null });
+  assert.deepEqual(summarizeCredentialHealth([]), { current: 0, notAssessed: 0, total: 0, percent: null });
+  assert.deepEqual(summarizeCredentialHealth([
+    { certifications: [{ expiryDate: daysFromNow(5) }] },
+    { certifications: [] },
+    { certifications: [{ expiryDate: daysFromNow(-1) }] }
+  ]), { current: 1, notAssessed: 1, total: 3, percent: 33 });
 });

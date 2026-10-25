@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateClearance } from '../js/lib/clearance.js';
+import { evaluateClearance } from '../public/js/lib/clearance.js';
 
 // Fixtures from LOCAL calendar dates, matching status.js#daysUntil (see the
 // note in status.test.mjs). Deterministic at any hour / timezone.
@@ -55,7 +55,8 @@ test('a valid cert outranks an expired one of the same type', () => {
   assert.deepEqual(r.expiringTypeIds, []);
 });
 
-test('no requirements means trivially cleared', () => {
+test('no requirements means not assessed and never cleared', () => {
   const r = evaluateClearance(worker(), [], 60, NOW);
-  assert.equal(r.cleared, true);
+  assert.equal(r.assessed, false);
+  assert.equal(r.cleared, false);
 });
