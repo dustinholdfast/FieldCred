@@ -2,7 +2,6 @@
   "name": "fieldcred",
   "account_id": "eef14117e342317b606fda458b144e58",
   "main": "worker/index.js",
-  "no_bundle": true,
   "compatibility_date": "2026-10-04",
   "compatibility_flags": [],
   "keep_vars": true,
@@ -33,6 +32,5 @@
   "vars": {
     "NOTIFY_EMAIL": "dustin@fieldcred.co",
     "RESEND_FROM": "FieldCred <onboarding@fieldcred.co>"
-  },
-  "find_additional_modules": false
+  }
 }
