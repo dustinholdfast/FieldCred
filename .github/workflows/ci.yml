@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Worker script parses
+        run: node --check worker/index.js
+
+      - name: Monitor script parses
+        run: bash -n scripts/monitor.sh
+
+      # Bundles the Worker and reads public/ exactly as a real deploy would,
+      # then stops before contacting Cloudflare. Needs no credentials.
+      - name: Wrangler dry-run deploy
+        run: npx --yes wrangler@4.152.0 deploy --dry-run --outdir "$RUNNER_TEMP/wrangler-dry-run"

@@ -1,0 +1,37 @@
+name: Monitor
+
+# Synthetic checks against app.fieldcred.co. A failed run makes GitHub email the
+# repo owner, which is the alert. GitHub only runs schedules from the default
+# branch, and pauses them after 60 days without repository activity.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # liveness checks
+    - cron: "17 13 * * *"    # daily: also send one message to Resend's test inbox
+  workflow_dispatch:
+    inputs:
+      deep:
+        description: Also check that Resend accepts mail (sends to Resend's test inbox)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check production
+        env:
+          BASE_URL: https://app.fieldcred.co
+          MONITOR_TOKEN: ${{ secrets.MONITOR_TOKEN }}
+          DEEP: ${{ (github.event.schedule == '17 13 * * *' || (github.event_name == 'workflow_dispatch' && inputs.deep)) && '1' || '0' }}
+        run: bash scripts/monitor.sh
