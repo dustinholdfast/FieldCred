@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isStale, STALE_AFTER_MS } from '../js/lib/offlineCache.js';
+import { isStale, STALE_AFTER_MS } from '../public/js/lib/offlineCache.js';
 
 // Only isStale() is tested here — it's the one pure piece of offlineCache.js.
 // Everything else touches the browser-only `indexedDB` global (lazily, never

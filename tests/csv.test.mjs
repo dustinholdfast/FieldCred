@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCSV, parseCSVWithHeader, toCSV } from '../js/lib/csv.js';
+import { parseCSV, parseCSVWithHeader, toCSV } from '../public/js/lib/csv.js';
 
 test('parseCSV handles quoted fields with commas and newlines', () => {
   const text = 'name,note\n"Doe, Jane","line1\nline2"\nJohn,plain';

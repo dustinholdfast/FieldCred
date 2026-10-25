@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildAuditPackHtml, auditPackSummary } from '../js/lib/auditPack.js';
+import { buildAuditPackHtml, auditPackSummary } from '../public/js/lib/auditPack.js';
 
 // Same local-date fixture pattern as tests/clearance.test.mjs — deterministic
 // at any hour/timezone, matches status.js#daysUntil.
@@ -177,4 +177,13 @@ test('an empty roster and empty scan log still render without throwing', () => {
   assert.match(html, /No workers assigned to this site/);
   assert.match(html, /No scans logged in this range/);
   assert.match(html, /0 workers, 0 fully cleared/);
+});
+
+test('an unconfigured site audit never labels a worker cleared or blocked', () => {
+  const html = buildAuditPackHtml({ tenant: {}, site, requiredTypes: [],
+    workers: [{ name: 'Unassessed worker', certifications: [] }], scans: [], range, generatedAt });
+  assert.match(html, /Not assessed: configure site requirements/);
+  assert.match(html, />Not assessed<\/span>/);
+  assert.doesNotMatch(html, />Cleared<\/span>|>Blocked<\/span>/);
+  assert.match(html, /0 fully cleared/);
 });

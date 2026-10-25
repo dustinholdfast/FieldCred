@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { deriveVerdict, shortExpiry, VERDICT } from '../js/lib/gateVerdict.js';
+import { deriveVerdict, shortExpiry, VERDICT } from '../public/js/lib/gateVerdict.js';
 
 const TODAY = new Date('2026-07-20T12:00:00');
 

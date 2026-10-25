@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gateLinkUrl, workerRecordUrl } from '../js/lib/publicLinks.js';
-import { parseScannedCode } from '../js/lib/qrScanner.js';
+import { gateLinkUrl, workerRecordUrl } from '../public/js/lib/publicLinks.js';
+import { parseScannedCode } from '../public/js/lib/qrScanner.js';
 
 // These two builders and parseScannedCode() are the two ends of one physical
 // loop: a URL is printed onto a code here and read back off a camera there.

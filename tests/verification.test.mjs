@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { verificationLink, VERIFICATION_SOURCES } from '../js/lib/verification.js';
+import { verificationLink, VERIFICATION_SOURCES } from '../public/js/lib/verification.js';
 
 const cert = (overrides = {}) => ({ verificationSource: '', verificationUrl: '', ...overrides });
 

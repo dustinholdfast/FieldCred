@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { safeExternalUrl, isSafeExternalUrl } from '../js/lib/format.js';
+import { safeExternalUrl, isSafeExternalUrl } from '../public/js/lib/format.js';
 
 // Regression test for a real bug found 2026-07-17: safeExternalUrl used to
 // resolve against the browser-only `location.origin` global, which doesn't
