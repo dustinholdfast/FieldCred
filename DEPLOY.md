@@ -1,9 +1,22 @@
 # Deploying FieldCred
 
 `app.fieldcred.co` is served by the Cloudflare Worker `fieldcred`
-(account `eef14117e342317b606fda458b144e58`). The Worker script is
-`worker/index.js`; the static app it serves is everything in `public/`
-(the `ASSETS` binding). Data lives in Neon, one project per tenant.
+(account `eef14117e342317b606fda458b144e58`). The Worker source is the ES
+modules in `worker/` (entry `worker/index.js`), which Wrangler bundles at
+deploy time; `worker/directorySearch.js` also imports the frontend's
+`public/js/lib/directoryFilter.js`, so the browser and the Worker share one
+filter validator. The static app it serves is everything in `public/` (the
+`ASSETS` binding). Data lives in Neon, one project per tenant; provisioning,
+schema and the expiration digest are in `neon/` (see `neon/README.md`).
+
+| Worker module | Handles |
+| --- | --- |
+| `endpoints.js` | routing, tenant lookups, signup email, private-file refusals |
+| `files.js` | `file.php` image/PDF proxy through the Data API |
+| `directorySearch.js` | `directory-search.php` (Gemini → allowlisted filter) |
+| `monitoring.js` | `/api/client-error`, `/api/health`, `/api/health/email` |
+| `http.js` | shared response helpers and security headers |
+| `rate-limit.js`, `tenants.js` | per-IP limits; the tenant registry |
 
 The old cPanel/FTP docroot and its PHP endpoints are retired. The Worker
 answers the same `*.php` paths itself (`tenant-lookup.php`,
@@ -14,7 +27,13 @@ server answers it with a 404.
 
 This repository was synced to production on 2026-10-25 from version
 `fd714f98-b4cc-449c-a613-bdf5d29a9f74` — `public/` matched the live site
-byte for byte, and `worker/index.js` matched the deployed script's etag.
+byte for byte, and the deployed script matched the bundle built from the
+`worker/` sources (recovered from the `cursor/demo-tenant-fieldcred-domain-c103`
+branch, which rebuilds it byte for byte).
+
+To add a tenant, provision it with `neon/provision-tenant.mjs`, then add its
+`slug`, `name`, `authUrl`, `dataApiUrl` and `domains` to `worker/tenants.js`
+(this replaces the retired `tenants.php`) and deploy.
 
 ---
 
@@ -150,6 +169,8 @@ icons from the live host, so deploy before building an APK. See
 
 ## Not part of this deploy
 
-- `billing-service/` deploys to Railway (`railway.json`).
+- `billing-service/` would deploy to Railway (`railway.json`), but is not
+  currently deployed; the app's capacity button falls back to email.
+- `neon/` scripts run from a shell with the env vars in `neon/README.md`.
 - `supabase/` is the pre-October backend: migrations, provisioning scripts
   and Edge Functions. It is kept for reference; production data is in Neon.
