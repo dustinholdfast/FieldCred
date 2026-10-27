@@ -461,6 +461,25 @@ export const store = {
     return siteRow(data);
   },
 
+  // Who is emailed when this site's gate turns a worker away (worker/
+  // scanAlert.js). Blank falls back to settings.notification_email. Kept out
+  // of the general site queries on purpose: the column comes from
+  // neon/migrations/001, and a tenant that hasn't applied it answers 42703 —
+  // here that means "not available yet", instead of breaking every site page.
+  async siteAlertEmail(id) {
+    const { data, error, status } = await db.from('sites').select('alert_email').eq('id', id).maybeSingle();
+    if (error && error.code === '42703') return { available: false, email: '' };
+    throwIfError(error, status);
+    return { available: true, email: data?.alert_email || '' };
+  },
+
+  async setSiteAlertEmail(id, email) {
+    const clean = (email || '').trim();
+    const { data, error, status } = await db.from('sites').update({ alert_email: clean || null }).eq('id', id).select('alert_email').single();
+    throwIfError(error, status);
+    return data.alert_email || '';
+  },
+
   async deleteSite(id) {
     const { error, status } = await db.from('sites').delete().eq('id', id);
     throwIfError(error, status);

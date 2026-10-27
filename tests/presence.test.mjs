@@ -115,8 +115,9 @@ test('queued scans from before this change sync as entries with no device or gua
   );
 });
 
-test('presence.js is precached, since the precached gate session imports it', () => {
+test('presence.js and scanAlert.js are precached, since precached gate modules import them', () => {
   const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(sw, /'\.\/js\/lib\/presence\.js'/);
-  assert.doesNotMatch(sw, /fieldcred-shell-v5'/);
+  assert.doesNotMatch(sw, /fieldcred-shell-v[56]'/);
+  assert.match(sw, /'\.\/js\/lib\/scanAlert\.js'/);
 });

@@ -2,8 +2,9 @@ import { TENANTS } from './tenants.js';
 import { enforceRateLimit } from './rate-limit.js';
 import { handleFile } from './files.js';
 import { DIRECTORY_SEARCH_LIMIT, directorySearchResult } from './directorySearch.js';
-import { clientIp, json, forbidden, limited, cleanField } from './http.js';
+import { clientIp, json, forbidden, limited, cleanField, escapeHtml } from './http.js';
 import { handleClientError, handleHealth, handleHealthEmail } from './monitoring.js';
+import { handleScanAlert } from './scanAlert.js';
 
 // Same caps as the PHP call sites.
 export const LIMITS = {
@@ -84,16 +85,6 @@ function handleTenantLookupByDomain(request, now, tenants) {
 // PHP empty(): null, false, 0, "0", "".
 function phpEmpty(value) {
   return value == null || value === false || value === 0 || value === '0' || value === '';
-}
-
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (ch) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  }[ch]));
 }
 
 // Matches PHP nl2br. cleanField already removes newlines, so this is a no-op
@@ -216,6 +207,10 @@ export async function handleRequest(request, env = {}, deps = {}) {
   if (path === '/api/client-error') return handleClientError(request, now);
   if (path === '/api/health') return handleHealth(request, env, tenants);
   if (path === '/api/health/email') return handleHealthEmail(request, env, fetchImpl, now);
+  if (path === '/api/scan-alert') {
+    const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
+    return handleScanAlert(request, env, tenants, fetchImpl, now, nowMs);
+  }
   if (path === '/file.php') {
     const nowMs = deps.nowMs ? deps.nowMs() : Date.now();
     return handleFile(request, tenants, fetchImpl, nowMs);

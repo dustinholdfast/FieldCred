@@ -9,6 +9,13 @@ The app reads and writes through Neon Auth and the Neon Data API (Postgres with 
 
 Nothing in this folder copies an existing Supabase database. Passwords cannot be imported: Neon Auth and Supabase hash them differently. Existing staff set a new password (or you create them again) after cutover.
 
+## Changing an existing tenant
+
+`schema.sql` is the baseline for a **new** tenant. Existing tenants get
+changes from `migrations/NNN_*.sql`, applied by hand in order; `schema.sql`
+is not safe to re-run on a live database. See "Database migrations" in
+`DEPLOY.md`.
+
 ## Env vars (names only)
 
 Set these in the host that needs them. Do not commit the values.

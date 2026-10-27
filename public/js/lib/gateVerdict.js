@@ -26,6 +26,8 @@ import { certStatus, RENEWAL_WINDOW_DAYS } from './status.js';
 import { store } from './state.js';
 import { withWakeRetry } from './wake.js';
 import { normalizeDirection } from './presence.js';
+import { requestBlockedScanAlert, shouldRequestAlert } from './scanAlert.js';
+import { tenantSlug } from './backendClient.js';
 import {
   cacheWorkerRecord,
   getCachedWorkerRecord,
@@ -206,9 +208,9 @@ export async function resolveSite(slug, { onWaiting } = {}) {
  */
 export async function logGateScan(siteSlug, workerSlug, meta = {}) {
   if (!siteSlug || !workerSlug) return { logged: false, queued: false };
+  let row;
   try {
-    await store.recordGateScan(siteSlug, workerSlug, meta);
-    return { logged: true, queued: false };
+    row = await store.recordGateScan(siteSlug, workerSlug, meta);
   } catch {
     try {
       await queueScan(siteSlug, workerSlug, meta);
@@ -219,6 +221,11 @@ export async function logGateScan(siteSlug, workerSlug, meta = {}) {
       return { logged: false, queued: false };
     }
   }
+  // The server's re-derived result, not ours, decides whether anyone is told.
+  if (shouldRequestAlert(row?.result, meta.direction)) {
+    requestBlockedScanAlert(tenantSlug, siteSlug, workerSlug);
+  }
+  return { logged: true, queued: false };
 }
 
 /**

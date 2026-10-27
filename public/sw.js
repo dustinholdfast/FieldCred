@@ -14,7 +14,7 @@
 // reason, see .htaccess); only serve from the cache when the network fetch
 // actually fails.
 
-const CACHE_NAME = 'fieldcred-shell-v6';
+const CACHE_NAME = 'fieldcred-shell-v7';
 
 // Precached at install so a gate device that is rebooted with no signal can
 // still boot the app, rather than depending on having happened to load every
@@ -42,6 +42,7 @@ const PRECACHE_URLS = [
   './js/lib/gateVerdict.js',
   './js/lib/gateSession.js',
   './js/lib/presence.js',
+  './js/lib/scanAlert.js',
   './js/vendor/jsqr.mjs',
   './js/vendor/neon-js.js',
   './assets/icon.svg',

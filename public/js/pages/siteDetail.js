@@ -95,6 +95,11 @@ export async function renderSiteDetail(container, params) {
             <input type="checkbox" id="site-active" ${site.active ? 'checked' : ''} ${canManage ? '' : 'disabled'}> Active
           </label>
           <div class="field" style="margin-top:14px;">
+            <label class="field-label" for="site-alert-email">BLOCKED-SCAN ALERTS <span style="font-weight:400;color:var(--text-muted);">— emailed the moment this gate turns someone away</span></label>
+            <input id="site-alert-email" type="email" autocomplete="off" placeholder="Loading…" disabled>
+            <div id="site-alert-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;"></div>
+          </div>
+          <div class="field" style="margin-top:14px;">
             <label class="field-label">GATE LINK <span style="font-weight:400;color:var(--text-muted);">— points a device at this site</span></label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input class="mono" id="site-gate-link" readonly value="${escapeHtml(gateUrl)}" style="font-size:12px;flex:1;min-width:0;" title="Click to select, then copy">
@@ -249,15 +254,53 @@ export async function renderSiteDetail(container, params) {
     }
   });
 
+  // ---- blocked-scan alert address ----
+  // Loaded after first paint: it's one more round trip, and a tenant without
+  // migration 001 should still get a working settings card.
+  const alertInput = container.querySelector('#site-alert-email');
+  const alertHint = container.querySelector('#site-alert-hint');
+  let alertAvailable = false;
+  (async () => {
+    let fallback = '';
+    try {
+      const [current, account] = await Promise.all([
+        store.siteAlertEmail(site.id),
+        // Admin-only by RLS; other roles just don't see the fallback.
+        store.getNotificationEmail().catch(() => ''),
+      ]);
+      fallback = account;
+      alertAvailable = current.available;
+      if (!current.available) {
+        alertInput.placeholder = 'Not available yet';
+        alertHint.textContent = 'Blocked-scan alerts need a database update (neon/migrations/001_blocked_scan_alerts.sql) before they can be set here.';
+        return;
+      }
+      alertInput.value = current.email;
+      alertInput.disabled = !canManage;
+      alertInput.placeholder = fallback || 'safety@yourcompany.com';
+      alertHint.textContent = fallback
+        ? `Leave blank to use the account alert address (${fallback}).`
+        : 'Leave blank to use the account alert address. No address is set for the account either, so blank means nobody is told.';
+    } catch (err) {
+      alertInput.placeholder = 'Couldn’t load';
+      alertHint.textContent = `Couldn't load the alert address: ${err.message}`;
+    }
+  })();
+
   container.querySelector('#site-save')?.addEventListener('click', async () => {
     const name = container.querySelector('#site-name').value.trim();
     if (!name) return showToast('Site name is required');
+    const alertEmail = alertInput.value.trim();
+    if (alertAvailable && alertEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(alertEmail)) {
+      return showToast('Enter a valid alert email, or leave it blank');
+    }
     try {
       const updated = await store.updateSite(site.id, {
         name,
         location: container.querySelector('#site-location').value,
         active: container.querySelector('#site-active').checked,
       });
+      if (alertAvailable) alertInput.value = await store.setSiteAlertEmail(site.id, alertEmail);
       site = updated;
       showToast('Settings saved');
       container.querySelector('.directory-title').textContent = updated.name;
