@@ -76,6 +76,7 @@ export function handleHealth(request, env, tenants) {
     tenants: tenants.length > 0,
     signupEmail: resendConfigured(env) && Boolean(env.NOTIFY_EMAIL),
     directorySearch: Boolean(String(env.GEMINI_API_KEY || '').trim()),
+    blockedScanAlerts: Boolean(String(env.ALERT_HOOK_SECRET || '').trim()),
   };
   const ok = Object.values(checks).every(Boolean);
   if (!ok) console.error(`[health] failing checks: ${Object.keys(checks).filter((k) => !checks[k]).join(', ')}`);

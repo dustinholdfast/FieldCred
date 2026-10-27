@@ -15,6 +15,8 @@ schema and the expiration digest are in `neon/` (see `neon/README.md`).
 | `files.js` | `file.php` image/PDF proxy through the Data API |
 | `directorySearch.js` | `directory-search.php` (Gemini → allowlisted filter) |
 | `monitoring.js` | `/api/client-error`, `/api/health`, `/api/health/email` |
+| `scanAlert.js` | `/api/scan-alert` — emails the site when a gate turns someone away |
+| `dataApi.js` | anonymous Data API token + RPC calls (shared by files and scan alerts) |
 | `http.js` | shared response helpers and security headers |
 | `rate-limit.js`, `tenants.js` | per-IP limits; the tenant registry |
 
@@ -58,6 +60,7 @@ in this repo and never should be — this repo is public. Set them with
 | `GEMINI_API_KEY` | secret | AI directory search |
 | `GEMINI_MODEL` | secret | AI directory search model id |
 | `MONITOR_TOKEN` | secret | unlocks `POST /api/health/email`; same value as the GitHub secret below |
+| `ALERT_HOOK_SECRET` | secret | lets the Worker claim blocked scans for alert emails; its SHA-256 is stored in each tenant database |
 | `NOTIFY_EMAIL` | var (`wrangler.json`) | where signup requests go |
 | `RESEND_FROM` | var (`wrangler.json`) | sender address |
 
@@ -71,6 +74,41 @@ tag in `public/index.html`.
 `Permissions-Policy` must keep `camera=(self)`. An empty `camera=()`
 disables the gate scanner on every device, and no browser setting can
 override it.
+
+---
+
+## Database migrations
+
+Tenant databases are changed by hand, one tenant at a time, with the files in
+`neon/migrations/` (Neon SQL Editor, or `psql` with that tenant's direct
+`DATABASE_URL`). Each file is idempotent. `neon/schema.sql` already includes
+every migration, for new tenants only: do **not** re-run it on an existing
+database, it stops at the first policy that already exists.
+
+Apply a release's migration **before** deploying the code that needs it. The
+code tolerates a missing migration (it logs and skips the feature), but the
+feature does nothing until the migration is in.
+
+### 001 — blocked-scan alerts
+
+1. Generate one random secret (32+ characters), e.g.
+   `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
+2. In each tenant database, apply `neon/migrations/001_blocked_scan_alerts.sql`,
+   then store the secret's hash:
+   ```sql
+   insert into public.alert_hook_secret (id, secret_hash)
+   values (1, digest('<the secret>', 'sha256'))
+   on conflict (id) do update set secret_hash = excluded.secret_hash;
+   ```
+3. `npx wrangler secret put ALERT_HOOK_SECRET` with the same secret.
+4. Set where alerts go: the account notification address (Admin settings) and,
+   optionally, a per-site address on each site's settings card.
+5. Deploy. `/api/health` reports `blockedScanAlerts` and fails until step 3
+   is done, so the monitor flags a half-finished rollout.
+
+To test the database side against a scratch Postgres (never a tenant), apply
+`neon/schema.sql` with an `auth.user_id()` stub and run
+`neon/migrations/001_blocked_scan_alerts.test.sql`.
 
 ---
 
@@ -152,7 +190,7 @@ done
 ## Service worker
 
 `public/sw.js` is network-first with a cache fallback. Bump `CACHE_NAME`
-(currently `fieldcred-shell-v6`) when the precache list changes, and add new
+(currently `fieldcred-shell-v7`) when the precache list changes, and add new
 boot-path modules to `PRECACHE_URLS` by hand — there is no build step to
 regenerate it.
 

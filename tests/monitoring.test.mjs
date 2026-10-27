@@ -35,6 +35,7 @@ const fullEnv = {
   RESEND_FROM: 'FieldCred <onboarding@fieldcred.co>',
   NOTIFY_EMAIL: 'ops@example.com',
   GEMINI_API_KEY: 'gemini-test',
+  ALERT_HOOK_SECRET: 'hook-secret-for-tests',
 };
 
 test('wrangler.json sends every /api/ path to the Worker before the asset server', () => {
@@ -95,8 +96,8 @@ test('health reports ok when everything is configured, without exposing any valu
   const res = await call('/api/health', {}, fullEnv);
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.deepEqual(body, { ok: true, checks: { assets: true, tenants: true, signupEmail: true, directorySearch: true } });
-  assert.doesNotMatch(JSON.stringify(body), /re_test_key|gemini-test/);
+  assert.deepEqual(body, { ok: true, checks: { assets: true, tenants: true, signupEmail: true, directorySearch: true, blockedScanAlerts: true } });
+  assert.doesNotMatch(JSON.stringify(body), /re_test_key|gemini-test|hook-secret-for-tests/);
 });
 
 test('health returns 503 and logs which checks fail when secrets are missing', async () => {
@@ -106,7 +107,7 @@ test('health returns 503 and logs which checks fail when secrets are missing', a
   const body = await res.json();
   assert.equal(body.ok, false);
   assert.equal(body.checks.signupEmail, false);
-  assert.match(lines[0], /^\[health\] failing checks: signupEmail, directorySearch$/);
+  assert.match(lines[0], /^\[health\] failing checks: signupEmail, directorySearch, blockedScanAlerts$/);
 });
 
 test('the email health check is hidden until MONITOR_TOKEN is set', async () => {

@@ -10,6 +10,8 @@
 
 import { getQueuedScans, queuedScanMeta, removeQueuedScan } from './offlineCache.js';
 import { store } from './state.js';
+import { tenantSlug } from './backendClient.js';
+import { requestBlockedScanAlert, shouldRequestAlert } from './scanAlert.js';
 
 let syncing = false; // re-entrancy guard — 'online' can fire in quick bursts
 
@@ -30,8 +32,15 @@ export async function syncQueuedScans() {
         // stale cached copy that was on screen at scan time. That's
         // deliberate: the audit log should reflect the real credential
         // state, not a snapshot from a device that had no signal.
-        await store.recordGateScan(scan.siteSlug, scan.workerSlug, queuedScanMeta(scan));
+        const meta = queuedScanMeta(scan);
+        const row = await store.recordGateScan(scan.siteSlug, scan.workerSlug, meta);
         await removeQueuedScan(scan.id);
+        // Synced scans are stamped with the sync time, so a blocked one is
+        // still inside the alert window and the site hears about it late
+        // rather than never.
+        if (shouldRequestAlert(row?.result, meta.direction)) {
+          requestBlockedScanAlert(tenantSlug, scan.siteSlug, scan.workerSlug);
+        }
       } catch {
         // Still offline, or this one attempt failed for some other reason —
         // leave it queued and move on to the rest; the next sync pass

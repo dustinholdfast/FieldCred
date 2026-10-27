@@ -40,3 +40,13 @@ export function cleanField(value, maxLen) {
   const stripped = trimmed.replace(/[\x00-\x1F\x7F]/g, '');
   return Array.from(stripped).slice(0, maxLen).join('');
 }
+
+export function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }[ch]));
+}

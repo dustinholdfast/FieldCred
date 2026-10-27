@@ -8,6 +8,8 @@
 // No database password. The Auth URL and Data API URL are the public
 // values tenant lookup already returns.
 
+import { callRpc, resetTokenCache } from './dataApi.js';
+
 const PUBLIC_BUCKETS = new Set(['photos', 'badges', 'logos']);
 const ALLOWED_TYPES = new Set([
   'image/jpeg',
@@ -25,12 +27,8 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
 };
 
-// Anonymous Data API tokens are not user sessions. Cached per Auth URL
-// inside this isolate, same 4-minute window file.php used on disk.
-const anonTokens = new Map();
-
 export function resetFileCache() {
-  anonTokens.clear();
+  resetTokenCache();
 }
 
 function fileError(status) {
@@ -39,61 +37,10 @@ function fileError(status) {
   return new Response(null, { status, headers });
 }
 
-function firstRow(data) {
-  if (Array.isArray(data)) return data[0] ?? null;
-  return data;
-}
-
-async function anonymousToken(authUrl, fetchImpl, nowMs) {
-  const cached = anonTokens.get(authUrl);
-  if (cached && cached.exp > nowMs + 15000) return cached.token;
-
-  let response;
-  try {
-    response = await fetchImpl(`${authUrl.replace(/\/$/, '')}/token/anonymous`, {
-      headers: { Accept: 'application/json' },
-    });
-  } catch {
-    return null;
-  }
-  if (!response.ok) return null;
-  let data;
-  try {
-    data = await response.json();
-  } catch {
-    return null;
-  }
-  const token = data && typeof data.token === 'string' ? data.token : '';
-  if (!token) return null;
-  anonTokens.set(authUrl, { token, exp: nowMs + 240000 });
-  return token;
-}
-
 async function dataApi(endpoints, fn, args, fetchImpl, nowMs) {
-  const token = await anonymousToken(endpoints.authUrl, fetchImpl, nowMs);
-  if (!token) return null;
-  let response;
-  try {
-    response = await fetchImpl(`${endpoints.dataApiUrl.replace(/\/$/, '')}/rpc/${fn}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(args),
-    });
-  } catch {
-    return null;
-  }
-  if (!response.ok) return null;
-  let data;
-  try {
-    data = await response.json();
-  } catch {
-    return null;
-  }
-  const row = firstRow(data);
+  const { ok, rows } = await callRpc(endpoints, fn, args, fetchImpl, nowMs);
+  if (!ok) return null;
+  const row = rows[0] ?? null;
   if (!row || typeof row !== 'object' || typeof row.data !== 'string') return null;
   return row;
 }
