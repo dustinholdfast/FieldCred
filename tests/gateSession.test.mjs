@@ -153,3 +153,70 @@ test('storage that throws degrades instead of breaking the app', async () => {
   assert.doesNotThrow(() => clearPin());
   assert.doesNotThrow(() => clearPairedSlug());
 });
+
+// ---- scan context: direction, device id, guard label ----------------------
+
+const {
+  getDirection,
+  setDirection,
+  getDeviceId,
+  getGuardLabel,
+  setGuardLabel,
+  cleanGuardLabel,
+  scanMeta,
+  GUARD_LABEL_MAX,
+} = await import('../public/js/lib/gateSession.js');
+
+test('direction defaults to entry and fails safe on a corrupted value', () => {
+  assert.equal(getDirection(), 'in');
+  setDirection('out');
+  assert.equal(getDirection(), 'out');
+  globalThis.localStorage.setItem('fieldcred_gate_direction', 'sideways');
+  assert.equal(getDirection(), 'in');
+  setDirection('nonsense');
+  assert.equal(globalThis.localStorage.getItem('fieldcred_gate_direction'), 'in');
+});
+
+test('device id is minted once, in a fixed format, and stays stable', () => {
+  const first = getDeviceId();
+  assert.match(first, /^gate-[a-f0-9]{10}$/);
+  assert.equal(getDeviceId(), first);
+  assert.equal(globalThis.localStorage.getItem('fieldcred_gate_device'), first);
+});
+
+test('a malformed stored device id is replaced', () => {
+  globalThis.localStorage.setItem('fieldcred_gate_device', '<script>');
+  const id = getDeviceId();
+  assert.match(id, /^gate-[a-f0-9]{10}$/);
+});
+
+test('guard label is trimmed, collapsed, capped, and cleared by an empty save', () => {
+  assert.equal(setGuardLabel('  M.   Reyes \n day shift  '), 'M. Reyes day shift');
+  assert.equal(getGuardLabel(), 'M. Reyes day shift');
+  assert.equal(cleanGuardLabel('x'.repeat(200)).length, GUARD_LABEL_MAX);
+  assert.equal(setGuardLabel('   '), '');
+  assert.equal(globalThis.localStorage.getItem('fieldcred_gate_guard'), null);
+});
+
+test('scanMeta carries direction, device and guard, with no guard as null', () => {
+  setDirection('out');
+  const meta = scanMeta();
+  assert.equal(meta.direction, 'out');
+  assert.match(meta.deviceId, /^gate-[a-f0-9]{10}$/);
+  assert.equal(meta.guardLabel, null);
+  setGuardLabel('Night gate');
+  assert.equal(scanMeta().guardLabel, 'Night gate');
+});
+
+test('scan context degrades instead of throwing when storage is unavailable', () => {
+  installStorage({
+    getItem() { throw new Error('denied'); },
+    setItem() { throw new Error('denied'); },
+    removeItem() { throw new Error('denied'); },
+  });
+  assert.equal(getDirection(), 'in');
+  assert.doesNotThrow(() => setDirection('out'));
+  assert.match(getDeviceId(), /^gate-[a-f0-9]{10}$/);
+  assert.equal(getGuardLabel(), '');
+  assert.doesNotThrow(() => setGuardLabel('x'));
+});

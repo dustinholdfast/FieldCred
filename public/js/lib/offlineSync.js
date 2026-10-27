@@ -8,7 +8,7 @@
 // console — so every failure mode here has to degrade to "try again later,"
 // never throw uncaught or lose a queued scan silently.
 
-import { getQueuedScans, removeQueuedScan } from './offlineCache.js';
+import { getQueuedScans, queuedScanMeta, removeQueuedScan } from './offlineCache.js';
 import { store } from './state.js';
 
 let syncing = false; // re-entrancy guard — 'online' can fire in quick bursts
@@ -30,7 +30,7 @@ export async function syncQueuedScans() {
         // stale cached copy that was on screen at scan time. That's
         // deliberate: the audit log should reflect the real credential
         // state, not a snapshot from a device that had no signal.
-        await store.recordGateScan(scan.siteSlug, scan.workerSlug);
+        await store.recordGateScan(scan.siteSlug, scan.workerSlug, queuedScanMeta(scan));
         await removeQueuedScan(scan.id);
       } catch {
         // Still offline, or this one attempt failed for some other reason —

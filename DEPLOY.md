@@ -152,7 +152,7 @@ done
 ## Service worker
 
 `public/sw.js` is network-first with a cache fallback. Bump `CACHE_NAME`
-(currently `fieldcred-shell-v5`) when the precache list changes, and add new
+(currently `fieldcred-shell-v6`) when the precache list changes, and add new
 boot-path modules to `PRECACHE_URLS` by hand — there is no build step to
 regenerate it.
 

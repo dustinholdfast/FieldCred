@@ -25,6 +25,7 @@ import { evaluateClearance } from './clearance.js';
 import { certStatus, RENEWAL_WINDOW_DAYS } from './status.js';
 import { store } from './state.js';
 import { withWakeRetry } from './wake.js';
+import { normalizeDirection } from './presence.js';
 import {
   cacheWorkerRecord,
   getCachedWorkerRecord,
@@ -203,14 +204,14 @@ export async function resolveSite(slug, { onWaiting } = {}) {
  * here; that's the point (see migration 009). This function deliberately does
  * not pass the client's verdict anywhere.
  */
-export async function logGateScan(siteSlug, workerSlug) {
+export async function logGateScan(siteSlug, workerSlug, meta = {}) {
   if (!siteSlug || !workerSlug) return { logged: false, queued: false };
   try {
-    await store.recordGateScan(siteSlug, workerSlug);
+    await store.recordGateScan(siteSlug, workerSlug, meta);
     return { logged: true, queued: false };
   } catch {
     try {
-      await queueScan(siteSlug, workerSlug);
+      await queueScan(siteSlug, workerSlug, meta);
       return { logged: false, queued: true };
     } catch {
       // No IndexedDB (private mode, quota) AND no signal. Nothing left to try
@@ -227,8 +228,11 @@ export async function logGateScan(siteSlug, workerSlug) {
  * check and an identical audit row, and differs only in the kicker on screen.
  * Set `log:false` for a check that must NOT be written to the audit log; the
  * only such case today is a badge from another tenant (see gateApp.js).
+ * `scan` is gateSession.scanMeta() — direction, device and guard for the
+ * audit row. An exit is checked exactly like an entry; only the screen and
+ * the logged direction differ.
  */
-export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date(), onWaiting } = {}) {
+export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = true, today = new Date(), onWaiting, scan = {} } = {}) {
   const [w, s] = await Promise.all([
     resolveWorker(workerSlug, { onWaiting }),
     resolveSite(siteSlug, { onWaiting }),
@@ -242,11 +246,12 @@ export async function buildVerdict(siteSlug, workerSlug, { via = 'scan', log = t
 
   let logResult = { logged: false, queued: false };
   if (log && siteSlug && workerSlug) {
-    logResult = await logGateScan(siteSlug, workerSlug);
+    logResult = await logGateScan(siteSlug, workerSlug, scan);
   }
 
   return {
     ...verdict,
+    direction: normalizeDirection(scan.direction),
     via,
     at: today,
     worker: w.worker,

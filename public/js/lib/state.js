@@ -552,16 +552,26 @@ export const store = {
   // date range rather than "the most recent 200 scans." The plain scan-log
   // page (js/pages/siteScanLog.js) still calls this with no options and gets
   // the old newest-200 behavior unchanged.
+  //
+  // direction/device_id/guard_label come from neon/schema.sql. A tenant
+  // database that predates them answers 42703 (undefined column); that read
+  // is retried without them rather than losing the whole log, and every row
+  // then reads as an entry, which is what it was.
   async siteScanLog(siteId, { from, to, limit = 200 } = {}) {
-    let query = db
-      .from('gate_scans')
-      .select('id, worker_id, worker_slug, worker_name, result, missing_types, scanned_at')
-      .eq('site_id', siteId)
-      .order('scanned_at', { ascending: false })
-      .limit(limit);
-    if (from) query = query.gte('scanned_at', from);
-    if (to) query = query.lte('scanned_at', to);
-    const { data, error, status } = await query;
+    const run = (columns) => {
+      let query = db
+        .from('gate_scans')
+        .select(columns)
+        .eq('site_id', siteId)
+        .order('scanned_at', { ascending: false })
+        .limit(limit);
+      if (from) query = query.gte('scanned_at', from);
+      if (to) query = query.lte('scanned_at', to);
+      return query;
+    };
+    const base = 'id, worker_id, worker_slug, worker_name, result, missing_types, scanned_at';
+    let { data, error, status } = await run(`${base}, direction, device_id, guard_label`);
+    if (error && error.code === '42703') ({ data, error, status } = await run(base));
     throwIfError(error, status);
     return (data || []).map((r) => ({
       id: r.id,
@@ -571,6 +581,9 @@ export const store = {
       result: r.result,
       missingTypes: r.missing_types || [],
       scannedAt: r.scanned_at,
+      direction: r.direction === 'out' ? 'out' : 'in',
+      deviceId: r.device_id || null,
+      guardLabel: r.guard_label || null,
     }));
   },
 };
